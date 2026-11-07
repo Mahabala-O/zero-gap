@@ -336,7 +336,9 @@ with tab_b:
                            "same-day)." if len(gaps) < len(STAGE_LABELS) else "."))
         else:
             head.append(f"{title(city)} is at or ahead of the fastest quarter of OC cities "
-                        "on the stages it reports.")
+                        + ("on the only stage that can be compared (the other is unknown or "
+                           "same-day)." if len(gaps) < len(STAGE_LABELS)
+                           else "on both stages."))
     else:
         head.append("How this city compares on stage times is **unknown** (too few records "
                     "or same-day reporting).")

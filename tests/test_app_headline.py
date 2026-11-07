@@ -334,3 +334,16 @@ def test_tab_b_headline_no_only_stage_note_when_both_compared():
     text = " ".join(m.value for m in at.markdown)
     assert "Furthest behind: **" in text
     assert "the only stage that can be compared" not in text
+
+
+def test_tab_b_at_or_ahead_says_when_only_one_stage_compared():
+    # Dana Point: Entitlement -> permit is unknown (n below MIN_N); only Permit -> CO compared.
+    # "on the stages it reports" read as if the unknown stage were also at or ahead.
+    at = AppTest.from_file("app.py", default_timeout=120).run()
+    at.selectbox(key="city_b_tab").set_value("DANA POINT").run()
+    assert not at.exception
+    text = " ".join(m.value for m in at.markdown)
+    assert "at or ahead of the fastest quarter of OC cities on the only stage" in text
+    at.selectbox(key="city_b_tab").set_value("SANTA ANA").run()  # both stages compared
+    text = " ".join(m.value for m in at.markdown)
+    assert "at or ahead of the fastest quarter of OC cities on both stages." in text

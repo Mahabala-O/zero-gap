@@ -328,3 +328,10 @@
 - Changed: README.md: one sentence added to the "City promise tracker" bullet, quoting the app text (app.py around line 335).
 - Result: check.sh pass; docs only, tests unchanged (44). README statements missing app behaviour: 1 -> 0.
 - Next: (1) A person should fill data/tableD_handcheck.csv and put the accuracy in the README. (2) A person should confirm .env.example holds only ANTHROPIC_API_KEY=. (3) Make the repo public before 14:30.
+
+### Round 48 · 13:21 · Tab B "at or ahead" headline says when only one stage could be compared
+- Category: C (wording implied a comparison that was not made)
+- Found: 4 cities (Dana Point, Fountain Valley, San Clemente, Westminster, plus the county row "Orange County") are at or ahead on one stage while the other is unknown (n below MIN_N) or same-day, yet the headline said "at or ahead ... on the stages it reports", which reads as if the unknown stage were also at or ahead. Same gap Round 46 closed for the "Furthest behind" branch. New test `test_tab_b_at_or_ahead_says_when_only_one_stage_compared` fails on the old code.
+- Changed: app.py: "at or ahead" headline now ends "on the only stage that can be compared (the other is unknown or same-day)." or "on both stages.". README.md: City promise tracker bullet mentions it. tests/test_app_headline.py: the new test (Dana Point, Santa Ana).
+- Result: check.sh pass; tests 44 -> 45. Jurisdictions with an implied two-stage "at or ahead" from one stage: 5 -> 0.
+- Next: (1) A person should fill data/tableD_handcheck.csv and put the accuracy in the README. (2) A person should confirm .env.example holds only ANTHROPIC_API_KEY=. (3) Make the repo public before 14:30.

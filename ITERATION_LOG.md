@@ -62,3 +62,10 @@
 - Changed: app.py: headline appends "ASSUMPTION: too few records hold both stages for <city>, so its stages were drawn separately; treat its P80 as rough." for each picked city with a known P80 and method != paired. tests/test_app_headline.py (new AppTest): Santa Ana flagged, Tustin (paired) not.
 - Result: check.sh pass; tests 14 -> 15. Default view now carries the ASSUMPTION flag in the headline.
 - Next: (1) UX round: screenshot.py, score against docs/ux-rubric.md. (2) Edge cases: City A = City B, unit type with n = 0 in Tab A. (3) README: mention the headline flag in "where it's wrong".
+
+### Round 10 · 12:12 · Tab A headline cautions when a picked city reports mostly same-day entitlement → permit
+- Category: C
+- Found: (1) Edge-case sweep: AppTest over all 34 cities × 7 unit types (238 runs), plus City A = City B: 0 exceptions, so there was nothing to fix in category E. (2) Ran screenshot.py and read the desktop/phone fold PNGs for both tabs: headline above the fold on desktop and phone, 4 inputs, ASSUMPTION next to the numbers. No full rubric score this round (full-page shots not read). (3) Honesty gap: choosing Anaheim (72.2% same-day, n=2,663) or Fullerton (85.1%, n=1,626) in Tab A gives a "faster" headline, but the same-day caveat appeared only in the Sources expander. Santa Ana is 0.0% same-day, so the default view is unaffected.
+- Changed: app.py: SAME_DAY_FLAG_PCT = 50 (ASSUMPTION). The headline adds "Caution: most of <city>'s entitlement → permit records give the same date for both (likely a reporting pattern, INFERRED)…" for any picked city at or above it. tests/test_app_headline.py: new test (Anaheim flagged, Tustin not, Santa Ana not).
+- Result: check.sh pass; tests 15 -> 16.
+- Next: (1) Tab B program table: two Tustin rows show the same truncated name "1.7 (Modified) Accessory Dwelling Units Program a. Promote the const…" with different categories, so the reader cannot tell them apart. Show more of the objective or a distinct sub-item. (2) Full UX rubric score from the *-full.png shots. (3) Headline grammar when both cities use separate draws ("its" -> "their").

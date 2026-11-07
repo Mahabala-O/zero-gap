@@ -304,7 +304,7 @@ def test_tab_a_zero_cost_does_not_say_budget_zero():
     assert not at.exception
     text = " ".join(m.value for m in at.markdown)
     assert "Budget **$0**" not in text
-    assert "carrying cost is set to $0/month" in text
+    assert "carrying cost is set to \\$0/month" in text  # \$ = literal dollar in Streamlit markdown
 
 
 def test_tab_b_headline_says_furthest_behind_not_slowest():

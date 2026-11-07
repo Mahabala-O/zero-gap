@@ -150,8 +150,8 @@ with tab_a:
     with st.expander("Carrying cost per month (ASSUMPTION)"):
         cost = st.number_input("Carrying cost, $ per month", min_value=0, step=100,
                                value=DEFAULT_MONTHLY_COST)
-        st.caption(f"ASSUMPTION: ${DEFAULT_MONTHLY_COST:,}/month is derived from the SYNTHETIC deal in "
-                   f"lanes/3-fund-it/data/synthetic-example-deal.json (${SYNTHETIC_TIME_COST:,} time cost) spread over "
+        st.caption(f"ASSUMPTION: \\${DEFAULT_MONTHLY_COST:,}/month is derived from the SYNTHETIC deal in "
+                   f"lanes/3-fund-it/data/synthetic-example-deal.json (\\${SYNTHETIC_TIME_COST:,} time cost) spread over "
                    "48 months (the \"about four years\" in docs/background.md). "
                    "It is not a real figure; replace it with yours.")
 
@@ -163,7 +163,7 @@ with tab_a:
     parts = []
     if ra["contingency"] != U and cost == 0:
         # "$0 contingency" would read as "no time risk"; the time gap still exists.
-        parts.append("Contingency is **$0** only because carrying cost is set to $0/month: "
+        parts.append("Contingency is **\\$0** only because carrying cost is set to \\$0/month: "
                      "enter your monthly cost to price the delay.")
     elif ra["contingency"] != U:
         parts.append(f"Budget **{dollars(shown_contingency(ra))}** contingency in "

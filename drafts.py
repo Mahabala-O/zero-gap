@@ -22,7 +22,9 @@ def _field(row: dict, key: str) -> str:
     v = row.get(key)
     if v is None or (isinstance(v, float) and v != v) or str(v).strip() == "":
         return UNKNOWN
-    return str(v).strip()
+    # Same words, one line: line breaks and runs of spaces in the city's text split the
+    # quoted bullet over several lines in the draft (e.g. Tustin's "6th HE Cycle  1.7 ...\n\na.").
+    return " ".join(str(v).split())
 
 
 def program_text(city: str, row: dict) -> str:

@@ -153,3 +153,10 @@
 - Changed: README.md: the City promise tracker bullet now says names on screen are the city's own words, shortened (shared lead words left out, e.g. Tustin's "6th HE Cycle"; same-looking names add the start of their own objective), and that the data and the draft keep the full names.
 - Result: check.sh pass; 24 tests. Ways the app changes on-screen text that the README describes: missing -> described.
 - Next: (1) Re-screenshot Tab B (Tustin, 1280 px) to confirm the shortened labels read well. (2) The peer list's category labels mix case ("ADU streamlining" vs "fees"). (3) A person should fill data/tableD_handcheck.csv.
+
+### Round 23 · 12:34 · Draft quotes the city's text on one line per field
+- Category: D
+- Found: screenshot.py → .ux/tab2-desktop-full.png (Tustin, 1280 px): the static draft's "- Program:" bullet broke over three lines ("6th HE Cycle  1.7 (Modified) Accessory Dwelling Units Program", blank line, "a.    Promote…"), so the quoted name ran into what looked like a new paragraph. 218 of 367 rows in data/tableD_classified.csv have a line break or double space in name, objective or status.
+- Changed: drafts.py: `_field()` joins the city's words with single spaces (same words, same order; nothing added or removed). Applies to the static draft and the text sent to Claude. tests/test_drafts.py: new test that a multi-line name becomes one quoted line and the Objective bullet follows it.
+- Result: check.sh pass; tests 24 -> 25. Lines in the Tustin draft's Program bullet: 3 -> 1.
+- Next: (1) Some Tustin labels still start "Goal 1: Adequate Housing Supply 6th HE Cycle 1.1…" (not every name shares that lead), so the Program column is filled by the same words; consider it. (2) The peer list's category labels mix case ("ADU streamlining" vs "fees"). (3) A person should fill data/tableD_handcheck.csv.

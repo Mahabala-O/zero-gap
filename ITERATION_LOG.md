@@ -83,3 +83,10 @@
 - Changed: app.py: both flags use "its" for one city and "their" for two; the same-day caution says "Anaheim and Fullerton's each" for two cities. tests/test_app_headline.py: new AppTest (Anaheim vs Fullerton → plural wording).
 - Result: check.sh pass; tests 18 -> 19. Single-city wording unchanged (existing tests still pass).
 - Next: (1) Full UX rubric score from the *-full.png shots. (2) README: mention the headline flags (separate draws, same-day caution) in "where it's wrong". (3) A person should fill data/tableD_handcheck.csv.
+
+### Round 13 · 12:17 · Tab B: OC best-quartile benchmark shows how many cities it is built from
+- Category: D
+- Found: screenshot.py → .ux/tab2-desktop-full.png: the Tab B stage table showed "OC best quartile: 3 months" with no n, failing UX rubric #4 ("every benchmark shows its n beside it"). Also found the *-full.png shots stop at 800 px (Streamlit scrolls inside its own container), so a full 13-point score cannot be read from them; scored items visible above the fold only.
+- Changed: app.py: `best_q_n()` (cached) counts the cities behind the benchmark; column renamed "OC best quartile (n)", cell reads e.g. "3 months (14 cities)", "unknown" when the benchmark is unknown. tests/test_app_headline.py: AppTest checks the cell's city count equals peer_medians (n ≥ MIN_N, same-day excluded).
+- Result: check.sh pass; tests 19 -> 20. Rubric #4 fail -> pass on Tab B. Counts: entitlement → permit 14 cities (17 with n ≥ 30, 3 same-day left out; round 6's "17 cities" counted those 3), permit → CO 23 cities.
+- Next: (1) Fix screenshot.py full-page capture (scroll Streamlit's main container) so a full rubric score is possible — note: scripts/ edits other than run_loop.sh/check.sh are allowed. (2) README: mention the headline flags (separate draws, same-day caution) in "where it's wrong". (3) A person should fill data/tableD_handcheck.csv.

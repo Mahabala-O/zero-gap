@@ -57,6 +57,13 @@ def best_q(stage: str):
     return A.best_quartile(A.peer_medians(data(), None, stage))
 
 
+@st.cache_data
+def best_q_n(stage: str) -> int:
+    """How many cities the OC best quartile is computed from (n >= MIN_N, not same-day)."""
+    peers = A.peer_medians(data(), None, stage)
+    return int((~peers["same_day"]).sum())
+
+
 def api_key() -> str | None:
     """Key from the environment, .env (local) or Streamlit secrets. Never shown or logged."""
     try:
@@ -275,7 +282,9 @@ with tab_b:
                     else "at or ahead")
         stage_rows.append({"Stage": label,
                            f"{title(city)} median (n)": f"{months(sm['P50'])} (n={sm['n']})",
-                           "OC best quartile": months(bq), "Gap": note})
+                           "OC best quartile (n)": (U if bq == U else
+                                                    f"{months(bq)} ({best_q_n(s)} cities)"),
+                           "Gap": note})
 
     n_prog = len(prog)
     n_over = int((prog["overdue"] == "yes").sum())

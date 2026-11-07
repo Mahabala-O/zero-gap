@@ -151,6 +151,13 @@ with tab_a:
                          f"{title(slow)} at P80.")
     elif city_a != city_b:
         parts.append("Which city is faster is **unknown** for this unit type.")
+    sep = [title(c) for k, c in picks.items()
+           if res[k]["method"] != "paired" and res[k]["co_date"]["P80"] != U]
+    sep = list(dict.fromkeys(sep))
+    if sep:
+        parts.append(f"ASSUMPTION: too few records hold both stages for "
+                     f"{' and '.join(sep)}, so its stages were drawn separately; "
+                     f"treat its P80 as rough.")
     st.markdown(" ".join(parts))
     st.caption("P50 = half of past projects finished by then (likely). "
                "P80 = 80% finished by then (safe to plan). Past performance, not a promise.")

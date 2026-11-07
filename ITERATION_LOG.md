@@ -55,3 +55,10 @@
 - Changed: git mv README.md -> EVENT-README.md (event info kept, links still resolve from root). New README.md from templates/TEAM-README.md: made-up users with before/after, what it does (default headlines re-rendered via AppTest: $16,100 Tustin contingency, Santa Ana ~21 months faster at P80; Tustin Tab B 17 months behind best quartile, 14 of 29 programs past target), how Claude is used, Try it, sources table with ASSUMPTION/INFERRED rows, real vs mocked, where it's wrong, next steps, privacy. Team name, members, video and live-demo links left as "to fill". Created .claude/BUILD_COMPLETE (in + cut list). .env.example not inspected: reading it is denied by permissions; it is tracked and check.sh's key scan passes.
 - Result: check.sh pass; 14 tests; build steps 1-6 done.
 - Next: (1) Tab A headline: flag when a city's figure uses separate (ASSUMPTION) draws (Santa Ana default). (2) UX round: screenshot.py and score against docs/ux-rubric.md. (3) A person should check .env.example holds only ANTHROPIC_API_KEY= and fill tableD_handcheck.csv.
+
+### Round 9 · 12:06 · Tab A headline flags cities whose P80 uses separate (ASSUMPTION) draws
+- Category: C
+- Found: default Tab A headline said "Santa Ana is about 21 months faster than Tustin at P80" with no sign that Santa Ana's figure uses separate per-stage draws (n_paired=6 < MIN_N); the ASSUMPTION label only appeared in the table's Method row.
+- Changed: app.py: headline appends "ASSUMPTION: too few records hold both stages for <city>, so its stages were drawn separately; treat its P80 as rough." for each picked city with a known P80 and method != paired. tests/test_app_headline.py (new AppTest): Santa Ana flagged, Tustin (paired) not.
+- Result: check.sh pass; tests 14 -> 15. Default view now carries the ASSUMPTION flag in the headline.
+- Next: (1) UX round: screenshot.py, score against docs/ux-rubric.md. (2) Edge cases: City A = City B, unit type with n = 0 in Tab A. (3) README: mention the headline flag in "where it's wrong".

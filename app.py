@@ -238,9 +238,10 @@ with tab_a:
             ys.append(None if U in (sm["P50"], sm["P80"]) else half(sm["P80"]) - half(sm["P50"]))
         fig.add_bar(name=f"{title(city)} ({k})", x=list(STAGE_LABELS.values()), y=ys,
                     marker_color=COLORS[k])
-    fig.update_layout(title="Which stage adds the most buffer (P80 − P50)",
-                      yaxis_title="Extra months to plan for", xaxis_title="Stage",
-                      barmode="group", height=320, margin=dict(l=10, r=10, t=40, b=10),
+    # Title as Streamlit text, not a Plotly title: Plotly clips long titles at phone width.
+    st.markdown("**Which stage adds the most buffer (P80 − P50)**")
+    fig.update_layout(yaxis_title="Extra months to plan for", xaxis_title="Stage",
+                      barmode="group", height=320, margin=dict(l=10, r=10, t=10, b=10),
                       legend=dict(orientation="h", y=-0.3))
     st.plotly_chart(fig, use_container_width=True)
 

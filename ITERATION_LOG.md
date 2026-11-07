@@ -216,3 +216,10 @@
 - Changed: app.py: the Tab A table uses st.table, which wraps text (same fix as Tab B in Round 18). tests/test_app_headline.py: new `test_tab_a_table_wraps_at_phone_width` (fails on old code). The contingency and chart tests read the same table through a `tab_a_table()` helper, with the same assertions.
 - Result: check.sh pass; tests 31 -> 32. City columns fully visible at 390 px: 1/2 -> 2/2. UX 12/13 -> 13/13.
 - Next: (1) Tab A chart title "Which stage adds the most buffer (P80 − P50)" is cut off at 390 px; shorten it or let it wrap. (2) A person should fill data/tableD_handcheck.csv. (3) Re-check Tab B phone screenshot.
+
+### Round 32 · 12:52 · Tab A chart title wraps at phone width instead of being cut off
+- Category: D (rubric #8, phone works; Round 31 queue item 1)
+- Found: .ux/tab1-phone-full.png (390 px): the Plotly title "Which stage adds the most buffer (P80 − P50)" was clipped at the right edge (Plotly titles do not wrap). UX 12/13 (only #8 failed).
+- Changed: app.py: the chart title is now bold Streamlit text above the chart (wraps); Plotly title removed, top margin 40 -> 10. tests/test_app_headline.py: new `test_tab_a_chart_title_wraps_at_phone_width` (fails on old code, passes now).
+- Result: check.sh pass; tests 32 -> 33. Re-screenshot tab1-phone-full.png: title fully visible on two lines. UX 12/13 -> 13/13.
+- Next: (1) Re-check Tab B phone screenshot for clipped text. (2) A person should fill data/tableD_handcheck.csv. (3) Tab A table at 390 px wraps "20 months / 31 months" over 4 lines; consider shorter cell text.

@@ -170,3 +170,13 @@ def test_tab_a_move_in_p80_not_sum_of_stage_p80s_and_says_so():
     at = AppTest.from_file("app.py", default_timeout=120).run()
     assert not at.exception
     assert any("earlier than adding the two stage P80s" in c.value for c in at.caption)
+
+
+def test_tab_a_chart_title_wraps_at_phone_width():
+    # A Plotly title is clipped at 390 px; the chart title must be Streamlit text that wraps.
+    import json
+    at = AppTest.from_file("app.py", default_timeout=120).run()
+    assert not at.exception
+    spec = json.loads(at.get("plotly_chart")[0].proto.spec)
+    assert not spec["layout"].get("title", {}).get("text")
+    assert any("Which stage adds the most buffer" in m.value for m in at.markdown)

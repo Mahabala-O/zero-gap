@@ -96,7 +96,7 @@ Run the checks: `bash scripts/check.sh` (key scan, compile, `pytest`, app runs w
 | Permitting programs | HCD Annual Progress Report **Table D**, data.ca.gov resource `37724925-2014-4646-ade8-3ba9f3ff9fb8`, filtered to the 34 OC cities plus Orange County, 8,623 rows (367 permitting-related 2025 rows classified) | 2026-11-07 |
 | Program labels | Claude Haiku 5.5 reading the city's own text. Not hand-checked yet (accuracy unknown) | 2026-11-07 |
 | City of Orange ADU permit → completion | BackyardADU.net reports 263 days; the APR data gives a different median. Both are shown in the app; we do not pick one | 2026-11-07 |
-| Carrying cost $1,771/month | **ASSUMPTION**: $85,000 time cost ÷ 48 months from the SYNTHETIC deal in `lanes/3-fund-it/data/synthetic-example-deal.json`. Editable in the app. Replace with yours | 2026-11-07 |
+| Carrying cost $1,771/month | **ASSUMPTION**: $85,000 time cost from the SYNTHETIC deal in `lanes/3-fund-it/data/synthetic-example-deal.json`, ÷ 48 months (the "about four years" land to keys in `docs/background.md`; the deal file has no month count). Editable in the app. Replace with yours | 2026-11-07 |
 | Minimum sample n = 30 | **ASSUMPTION**: below 30 records a cell shows "unknown" | 2026-11-07 |
 | Stages drawn separately | **ASSUMPTION**: when fewer than 30 records hold both stages, the two stages are drawn independently, which ignores any link between them. The app labels every result that uses this | 2026-11-07 |
 | OC best quartile | **ASSUMPTION**: 25th percentile of city medians (cities with n ≥ 30), excluding cities whose median is same-day (0 days), and "unknown" with fewer than 4 cities | 2026-11-07 |

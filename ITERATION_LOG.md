@@ -342,3 +342,10 @@
 - Changed: app.py: caption uses f"${DEFAULT_MONTHLY_COST:,}". tests/test_app_headline.py: `test_default_cost_matches_synthetic_deal_and_caption` checks the default equals round(85000/48) read from the deal JSON and that the rendered caption shows it.
 - Result: check.sh pass; tests 45 -> 46. Hard-coded copies of the default cost in app.py: 2 -> 1.
 - Next: (1) A person should fill data/tableD_handcheck.csv and put the accuracy in the README. (2) A person should confirm .env.example holds only ANTHROPIC_API_KEY=. (3) Make the repo public before 14:30.
+
+### Round 50 · 13:25 · Carrying-cost caption cites where "48 months" comes from
+- Category: C (a number on screen without its source)
+- Found: caption and README said "$85k / 48 months from the SYNTHETIC deal", but the deal JSON has no month count (only time_costs_while_waiting = 85000). The 48 is the "about four years" land-to-keys in docs/background.md line 59.
+- Changed: app.py: caption and ASSUMPTION comment name docs/background.md as the source of 48 months. README.md: sources row says the same. tests/test_app_headline.py: `test_default_cost_caption_cites_source_of_48_months`.
+- Result: check.sh pass; tests 46 -> 47. Unsourced numbers in the carrying-cost caption: 1 -> 0.
+- Next: (1) A person should fill data/tableD_handcheck.csv and put the accuracy in the README. (2) A person should confirm .env.example holds only ANTHROPIC_API_KEY=. (3) Make the repo public before 14:30.

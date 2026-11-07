@@ -19,8 +19,9 @@ import drafts as D
 
 st.set_page_config(page_title="Permit Clock", layout="centered")
 
-# ASSUMPTION: $85,000 time cost / 48 months from the SYNTHETIC deal in
-# lanes/3-fund-it/data/synthetic-example-deal.json. Not a real figure; replace with yours.
+# ASSUMPTION: $85,000 time cost from the SYNTHETIC deal in
+# lanes/3-fund-it/data/synthetic-example-deal.json, spread over 48 months (the "about four
+# years" land-to-keys in docs/background.md). Not a real figure; replace with yours.
 DEFAULT_MONTHLY_COST = 1771
 COLORS = {"A": "#1f77b4", "B": "#e8743b"}  # City A / City B, same everywhere
 STAGE_LABELS = {"ent_to_permit": "Entitlement → permit",
@@ -149,7 +150,8 @@ with tab_a:
         cost = st.number_input("Carrying cost, $ per month", min_value=0, step=100,
                                value=DEFAULT_MONTHLY_COST)
         st.caption(f"ASSUMPTION: ${DEFAULT_MONTHLY_COST:,}/month is derived from the SYNTHETIC deal in "
-                   "lanes/3-fund-it/data/synthetic-example-deal.json ($85k / 48 months). "
+                   "lanes/3-fund-it/data/synthetic-example-deal.json ($85k time cost) spread over "
+                   "48 months (the \"about four years\" in docs/background.md). "
                    "It is not a real figure; replace it with yours.")
 
     picks = {"A": city_a, "B": city_b}

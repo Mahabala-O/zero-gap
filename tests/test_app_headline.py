@@ -359,3 +359,11 @@ def test_default_cost_matches_synthetic_deal_and_caption():
     assert default == round(time_cost / 48)
     at = AppTest.from_file("app.py", default_timeout=60).run()
     assert any(f"${default:,}/month" in c.value for c in at.caption)
+
+
+def test_default_cost_caption_cites_source_of_48_months():
+    # The deal file has no month count; 48 comes from "about four years" in docs/background.md.
+    assert "about four years" in open("docs/background.md").read()
+    at = AppTest.from_file("app.py", default_timeout=60).run()
+    cap = next(c.value for c in at.caption if "/month is derived" in c.value)
+    assert "docs/background.md" in cap and "48 months" in cap

@@ -251,3 +251,10 @@
 - Changed: README.md: "City promise tracker" bullet adds "as of 2026-11-07", the unknown-overdue clause (Costa Mesa 17 of 17) and the info-box-only case.
 - Result: check.sh pass; docs only, tests unchanged (36). README statements missing app behaviour: 2 -> 0.
 - Next: (1) A person should fill data/tableD_handcheck.csv and put the accuracy in the README. (2) Tab B phone: consider dropping the "City's own status text" column if the tests allow. (3) Re-screenshot Tab B at 390 px.
+
+### Round 37 · 13:02 · Tab A says so when City A and City B are the same city
+- Category: E (unhandled edge case)
+- Found: with Tustin picked in both boxes, the headline dropped the "which city is faster" sentence with no reason given, and the table/chart showed two identical columns. Considered Round 36 queue item 2 (drop "City's own status text" column) and rejected it: the Tab B caveat tells users to "read the city's own text beside each row".
+- Changed: app.py: headline adds "City A and City B are the same city: pick a different City B to compare." when they match. tests/test_app_headline.py: new `test_tab_a_same_city_twice_says_so` (fails on old code, passes now).
+- Result: check.sh pass; tests 36 -> 37. Same-city view with no explanation: 1 -> 0.
+- Next: (1) A person should fill data/tableD_handcheck.csv and put the accuracy in the README. (2) Re-screenshot Tab B at 390 px. (3) Tab A chart with no bars for either city (both unknown) shows an empty plot; consider hiding it.

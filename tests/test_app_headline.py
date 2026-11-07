@@ -230,3 +230,15 @@ def test_tab_b_city_with_no_programs_has_no_zero_count_headline():
     text = " ".join(m.value for m in at.markdown)
     assert "past their target date" not in text
     assert any("No permitting-related programs found" in i.value for i in at.info)
+
+
+def test_tab_a_same_city_twice_says_so():
+    # Picking the same city in both boxes used to drop the comparison sentence silently.
+    at = AppTest.from_file("app.py", default_timeout=120).run()
+    at.selectbox[1].select_index(at.selectbox[1].options.index("Tustin")).run()
+    assert not at.exception
+    text = " ".join(m.value for m in at.markdown)
+    assert "pick a different City B to compare" in text
+    assert "faster than" not in text
+    at.selectbox[1].select_index(at.selectbox[1].options.index("Santa Ana")).run()
+    assert "pick a different City B" not in " ".join(m.value for m in at.markdown)

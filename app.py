@@ -173,6 +173,9 @@ with tab_a:
                          f"{title(slow)} at P80.")
     elif city_a != city_b:
         parts.append("Which city is faster is **unknown** for this unit type.")
+    if city_a == city_b:
+        # Without this, the comparison sentence just disappears with no reason given.
+        parts.append("City A and City B are the same city: pick a different City B to compare.")
     sep = [title(c) for k, c in picks.items()
            if res[k]["method"] != "paired" and res[k]["co_date"]["P80"] != U]
     sep = list(dict.fromkeys(sep))

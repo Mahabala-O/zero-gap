@@ -45,6 +45,23 @@ def settle(page):
     page.wait_for_timeout(1000)
 
 
+def content_height(page, minimum, cap=8000):
+    """Height of the content inside Streamlit's scrolling container, capped."""
+    js = """() => {
+        const sels = ['[data-testid="stMain"]', '[data-testid="stAppViewContainer"]', 'section.main'];
+        let h = document.documentElement.scrollHeight;
+        for (const s of sels) {
+            const el = document.querySelector(s);
+            if (el) h = Math.max(h, el.scrollHeight);
+        }
+        return h;
+    }"""
+    try:
+        return max(minimum, min(int(page.evaluate(js)) + 40, cap))
+    except Exception:
+        return minimum
+
+
 def main():
     if not (ROOT / "app.py").exists():
         print("No app.py yet: nothing to screenshot.")
@@ -76,10 +93,18 @@ def main():
                     if tabs.count():
                         tabs.nth(i).click()
                         settle(page)
-                    for kind, full in (("fold", False), ("full", True)):
-                        path = OUT / f"tab{i + 1}-{label}-{kind}.png"
-                        page.screenshot(path=str(path), full_page=full)
-                        saved.append(path)
+                    path = OUT / f"tab{i + 1}-{label}-fold.png"
+                    page.screenshot(path=str(path))
+                    saved.append(path)
+                    # Streamlit scrolls inside its own container, so full_page=True stops at
+                    # the viewport. Grow the viewport to the content height instead.
+                    page.set_viewport_size({"width": w, "height": content_height(page, h)})
+                    page.wait_for_timeout(1000)
+                    path = OUT / f"tab{i + 1}-{label}-full.png"
+                    page.screenshot(path=str(path))
+                    saved.append(path)
+                    page.set_viewport_size({"width": w, "height": h})
+                    page.wait_for_timeout(500)
                 page.close()
             browser.close()
     finally:

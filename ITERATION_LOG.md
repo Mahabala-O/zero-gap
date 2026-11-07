@@ -244,3 +244,10 @@
 - Changed: app.py: the program-count sentence shows only when the city has at least 1 program (the info box covers 0). tests/test_app_headline.py: new `test_tab_b_city_with_no_programs_has_no_zero_count_headline` (fails on old code, passes now).
 - Result: check.sh pass; tests 35 -> 36. Cities with a "0 past due" line and no programs: 1 -> 0.
 - Next: (1) A person should fill data/tableD_handcheck.csv and put the accuracy in the README. (2) Tab B phone: consider dropping the "City's own status text" column if the tests allow. (3) Re-screenshot Tab B at 390 px.
+
+### Round 36 · 13:00 · README describes Tab B's "overdue: unknown" clause and dates the overdue count
+- Category: F
+- Found: README's Tab B description did not mention Round 34's "overdue is unknown" clause or Round 35's no-programs behaviour, and quoted "14 are past their target date" without the date it depends on (overdue is computed against today). Re-ran analysis: Tustin 29 programs, 14 overdue, 0 unknown on 2026-11-07, so the quote still matches.
+- Changed: README.md: "City promise tracker" bullet adds "as of 2026-11-07", the unknown-overdue clause (Costa Mesa 17 of 17) and the info-box-only case.
+- Result: check.sh pass; docs only, tests unchanged (36). README statements missing app behaviour: 2 -> 0.
+- Next: (1) A person should fill data/tableD_handcheck.csv and put the accuracy in the README. (2) Tab B phone: consider dropping the "City's own status text" column if the tests allow. (3) Re-screenshot Tab B at 390 px.

@@ -56,3 +56,13 @@ def test_tab_b_explains_co():
     assert not at.exception
     caps = [c.value for c in at.caption if "Best quartile" in c.value]
     assert len(caps) == 1 and "CO = certificate of occupancy" in caps[0]
+
+
+def test_tab_b_target_date_beside_overdue():
+    # The target date explains each "overdue" flag, so it sits right after it and stays on
+    # screen at 1280 px (round 17: it was the 5th column, scrolled off to the right).
+    at = AppTest.from_file("app.py", default_timeout=120).run()
+    assert not at.exception
+    tables = [d.value for d in at.dataframe if "Overdue" in d.value.columns]
+    assert len(tables) == 1
+    assert list(tables[0].columns[:3]) == ["Overdue", "Target date", "Program"]

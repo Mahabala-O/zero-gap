@@ -318,10 +318,10 @@ with tab_b:
         labels = A.program_labels(show)
         st.dataframe(pd.DataFrame({
             "Overdue": show["overdue"],
+            "Target date": show["target_date"].fillna(U),
             "Program": labels,
             "Category": show["category"],
             "Status": show["status_bucket"],
-            "Target date": show["target_date"].fillna(U),
             "City's own status text": show["PROGRAM_STATUS"],
         }), use_container_width=True, hide_index=True)
         open_cats = sorted(set(prog.loc[prog["status_bucket"] != "completed", "category"])

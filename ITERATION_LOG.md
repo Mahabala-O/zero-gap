@@ -111,3 +111,10 @@
 - Changed: README.md: the two bullets now give the trigger, the threshold (labelled ASSUMPTION) and that the warning is in the Tab A headline.
 - Result: check.sh pass; 21 tests. UX rubric 13/13 (#10 now measured: < 0.4 s per input change).
 - Next: (1) Tab B program table: Program column cuts off the objective snippet at 1280 px. (2) A person should fill data/tableD_handcheck.csv. (3) Phone-width check of Tab B draft section.
+
+### Round 17 · 12:23 · Tab B program table shows the target date next to the overdue flag
+- Category: D
+- Found: screenshot.py → .ux/tab2-desktop-full.png (Tustin, 1280 px): only Overdue, Program and Category fit on screen; "Target date" was the 5th column, scrolled off the right edge, so a reader saw "yes" (overdue) with no date to explain it.
+- Changed: app.py: Tab B program table column order is now Overdue, Target date, Program, Category, Status, city's own text (no data or wording change). tests/test_app_headline.py: AppTest checks the first three columns.
+- Result: check.sh pass; tests 21 -> 22. Overdue rows with their target date visible without scrolling at 1280 px: 0 -> all (14 of 14 overdue for Tustin).
+- Next: (1) Program column still cuts the objective snippet at 1280 px (e.g. "— Update ADU Ordinar…"); consider column_config width or a shorter name_len. (2) Phone-width check of Tab B draft section. (3) A person should fill data/tableD_handcheck.csv.

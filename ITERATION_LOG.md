@@ -195,3 +195,10 @@
 - Changed: app.py: new `half()` (nearest half month, used by `months()` and the Tab B gap); chart bars = half(P80) − half(P50), and no bar if either one is unknown. tests/test_app_headline.py: new AppTest `test_tab_a_chart_buffer_matches_shown_months` (fails on the old code, passes now).
 - Result: check.sh pass; tests 29 -> 30. Default-view bars that do not match the table: 4/4 -> 0/4.
 - Next: (1) The peer list's category labels mix case ("ADU streamlining" vs "fees"). (2) A person should fill data/tableD_handcheck.csv. (3) Check the Tab A move-in dates against the shown P50/P80 months (start + months).
+
+### Round 29 · 12:46 · Tab A says why the move-in P80 is earlier than adding the stage P80s
+- Category: C (numbers on screen that look like they do not add up; Round 28 queue item 3)
+- Found: default view, Tustin: the table shows entitlement → permit P80 31 months and permit → CO P80 11.5 months (about 42 months together), but the move-in P80 date is Mar 2030, about 40 months after the Nov 2026 start. This is correct (the P80 of whole simulated projects is not the sum of each stage's P80, because few projects are slow at both stages), but nothing on screen said so, and a reader adding the column would think the date is wrong.
+- Changed: app.py: one caption under the Tab A table explains it (no number changed). tests/test_app_headline.py: new test `test_tab_a_move_in_p80_not_sum_of_stage_p80s_and_says_so` (simulated Tustin P80 < sum of stage P80s, and the caption is shown).
+- Result: check.sh pass; tests 30 -> 31. Move-in dates that differ from the column sum without an explanation: 2/2 default cities -> 0.
+- Next: (1) The peer list's category labels mix case ("ADU streamlining" vs "fees"). (2) A person should fill data/tableD_handcheck.csv. (3) README: mention that move-in dates come from whole simulated projects, not the sum of stage P80s.

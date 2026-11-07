@@ -141,3 +141,20 @@ def test_tab_a_chart_buffer_matches_shown_months():
                 continue
             p50, p80 = (num(x) for x in cell.split(" (n=")[0].split(" / "))
             assert y == p80 - p50, (col, row, cell, y)
+
+
+def test_tab_a_move_in_p80_not_sum_of_stage_p80s_and_says_so():
+    # Tustin (default City A): stage P80s add to about 42 months, the simulated move-in P80 is
+    # earlier. The table must explain why so a reader adding the column is not misled.
+    import datetime as dt
+    import pandas as pd
+    import analysis as A
+    df = A.add_durations(A.load_a2())
+    start = dt.date.today().isoformat()
+    r = A.monte_carlo(df, "TUSTIN", None, start, 1771.0)
+    p80_sum = sum(A.summary(df, "TUSTIN", None, s)["P80"] for s in ["ent_to_permit", "permit_to_co"])
+    sim = (r["co_date"]["P80"] - pd.Timestamp(start)).days / A.DAYS_PER_MONTH
+    assert sim < p80_sum
+    at = AppTest.from_file("app.py", default_timeout=120).run()
+    assert not at.exception
+    assert any("earlier than adding the two stage P80s" in c.value for c in at.caption)

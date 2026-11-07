@@ -211,6 +211,8 @@ with tab_a:
                          else "stages drawn separately (ASSUMPTION)")
         rows[f"{title(city)} ({k})"] = col
     st.dataframe(pd.DataFrame(rows), use_container_width=True)
+    st.caption("Move-in dates come from whole simulated projects, so the P80 date is usually "
+               "earlier than adding the two stage P80s: few projects are slow at both stages.")
 
     # Dead-end help: say why it is unknown and what to try.
     for k, city in picks.items():

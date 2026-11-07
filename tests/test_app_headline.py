@@ -88,3 +88,20 @@ def test_tab_b_program_column_is_wide():
     assert not at.exception
     d = [d for d in at.dataframe if "Overdue" in d.value.columns][0]
     assert json.loads(d.proto.columns)["Program"]["width"] == "large"
+
+
+def test_tab_b_gap_matches_shown_values():
+    # Round 26: Tustin Permit -> CO showed "9 months" vs "6 months" with a gap of "2.5 months"
+    # (gap taken from unrounded medians). The gap must equal the two shown numbers' difference.
+    import re
+    at = AppTest.from_file("app.py", default_timeout=120).run()
+    assert not at.exception
+    t = [d.value for d in at.table if "OC best quartile (n)" in d.value.columns][0]
+    num = lambda c: float(re.match(r"([\d.]+) month", c).group(1))
+    checked = 0
+    for _, row in t.iterrows():
+        gap = row["Gap"]
+        if gap.endswith("behind"):
+            assert num(gap) == num(row[[c for c in t.columns if "median" in c][0]]) - num(row["OC best quartile (n)"])
+            checked += 1
+    assert checked >= 1

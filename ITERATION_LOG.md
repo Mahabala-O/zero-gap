@@ -174,3 +174,10 @@
 - Changed: analysis.py: `_drop_shared_lead()` labels from after the last repeat of the city's shared lead when words follow it (on-screen label only; data and draft keep full names). tests/test_analysis.py: new test (heading skipped; a trailing repeat with nothing after it leaves the name as is). README.md: label bullet says so.
 - Result: check.sh pass; tests 26 -> 27. Tustin labels starting "Goal": 4 -> 0; labels still unique 29/29; no empty labels across all 367 rows.
 - Next: (1) Re-screenshot Tab B (Tustin, 1280 px) to confirm the labels read well. (2) The peer list's category labels mix case ("ADU streamlining" vs "fees"). (3) A person should fill data/tableD_handcheck.csv.
+
+### Round 26 · 12:41 · Tab B gap equals the difference of the numbers shown beside it
+- Category: D (rubric #4, numbers readable)
+- Found: screenshot.py → .ux/tab2-desktop-full.png (Tustin, 1280 px): the Permit → CO row showed "9 months (n=634)" vs OC best quartile "6 months (23 cities)" with Gap "2.5 months behind". The gap came from unrounded medians, so the row did not add up for a reader. (Round 24 queue item "coverage_pct below MIN_N" checked: coverage_pct is not shown anywhere in the UI, so nothing to fix.) UX score: 12/13 -> 13/13 (only #4 failed).
+- Changed: app.py: Tab B gap = shown (half-month) median − shown best quartile; the headline "slowest stage" uses the same gap. tests/test_app_headline.py: new AppTest `test_tab_b_gap_matches_shown_values` (fails on the old code: 2.5 != 9 − 6).
+- Result: check.sh pass; tests 27 -> 28. Tustin Permit → CO gap: 2.5 -> 3 months; Entitlement → permit unchanged (17).
+- Next: (1) The peer list's category labels mix case ("ADU streamlining" vs "fees"). (2) A person should fill data/tableD_handcheck.csv. (3) Check Tab A's numbers add up the same way (P80 − P50 contingency vs shown months).

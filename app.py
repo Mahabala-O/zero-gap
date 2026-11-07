@@ -277,7 +277,8 @@ with tab_b:
         elif bq == U:
             note = U
         else:
-            gaps[label] = sm["P50"] - bq
+            # Gap = difference of the shown (half-month) values, so the row adds up on screen.
+            gaps[label] = round(sm["P50"] * 2) / 2 - round(bq * 2) / 2
             note = (f"{months(gaps[label])} behind" if gaps[label] >= 0.25
                     else "at or ahead")
         stage_rows.append({"Stage": label,

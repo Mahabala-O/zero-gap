@@ -89,8 +89,10 @@ def live_draft(city: str, row_items: tuple) -> str:
 
 
 @st.cache_data
-def programs() -> pd.DataFrame:
-    return A.add_overdue(A.load_programs(), dt.date.today())
+def programs(today: dt.date) -> pd.DataFrame:
+    # today is an argument so the cache key changes each day; otherwise a long-running app
+    # would keep counting "overdue" against the date it first loaded.
+    return A.add_overdue(A.load_programs(), today)
 
 
 def half(x) -> float:
@@ -287,7 +289,7 @@ with tab_a:
                    "explain why a city is faster or slower.")
 
 with tab_b:
-    prog_all = programs()
+    prog_all = programs(dt.date.today())
     b_cities = sorted(set(prog_all["JURIS_NAME"]) | set(cities))
     city = st.selectbox("City", b_cities, index=b_cities.index("TUSTIN"), format_func=title,
                         key="city_b_tab")

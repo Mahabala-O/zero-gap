@@ -271,3 +271,27 @@ def test_tab_b_peer_category_labels_capitalized():
     assert peers
     labels = re.findall(r"^- \*\*(.+?):\*\*", peers[0], flags=re.M)
     assert labels and all(l[0].isupper() for l in labels), labels
+
+
+def test_tab_b_overdue_uses_todays_date_not_first_load(monkeypatch):
+    # programs() is cached; the overdue count must follow the current date, not the date the
+    # cache was first filled (a deployed app can run for days).
+    import datetime
+
+    class Day(datetime.date):
+        fixed = datetime.date(2020, 1, 1)
+
+        @classmethod
+        def today(cls):
+            return cls.fixed
+
+    def tustin_head():
+        at = AppTest.from_file("app.py", default_timeout=120).run()
+        assert not at.exception
+        return [m.value for m in at.markdown if "past their target date" in m.value][0]
+
+    monkeypatch.setattr(datetime, "date", Day)
+    early = tustin_head()
+    Day.fixed = datetime.date(2035, 1, 1)
+    late = tustin_head()
+    assert early != late

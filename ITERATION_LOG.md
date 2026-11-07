@@ -286,3 +286,10 @@
 - Changed: README.md: "Data and privacy" section records the scan, its date and the single non-personal hit.
 - Result: check.sh pass; docs only, tests unchanged (39). Keys found in history: 0; personal records found: 0.
 - Next: (1) A person should fill data/tableD_handcheck.csv and put the accuracy in the README. (2) A person should confirm .env.example holds only ANTHROPIC_API_KEY= (this round's tool policy blocked reading it). (3) Make the repo public before 14:30.
+
+### Round 42 · 13:11 · Tab B overdue count follows today's date, not the first load's
+- Category: E (cached step with a stale input)
+- Found: `programs()` was `@st.cache_data` with no arguments and called `dt.date.today()` inside, so the "past their target date" count froze at the date the cache was first filled. A deployed app left running past a program's target date would keep calling it not overdue. New test `test_tab_b_overdue_uses_todays_date_not_first_load` (today 2020-01-01 then 2035-01-01) fails on the old code: same headline both times.
+- Changed: app.py: `programs(today)` takes the date as an argument, so the cache key changes each day; the call passes `dt.date.today()`. tests/test_app_headline.py: the new test.
+- Result: check.sh pass; tests 39 -> 40. Days the overdue count can go stale on a running app: unbounded -> 0.
+- Next: (1) A person should fill data/tableD_handcheck.csv and put the accuracy in the README. (2) A person should confirm .env.example holds only ANTHROPIC_API_KEY=. (3) Make the repo public before 14:30.

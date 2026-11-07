@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import os
 from pathlib import Path
 
 import pandas as pd
@@ -14,6 +15,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 import analysis as A
+import drafts as D
 
 st.set_page_config(page_title="Permit Clock", layout="centered")
 
@@ -52,6 +54,30 @@ def stage_summary(city: str, unit_cat, stage: str) -> dict:
 @st.cache_data
 def best_q(stage: str):
     return A.best_quartile(A.peer_medians(data(), None, stage))
+
+
+def api_key() -> str | None:
+    """Key from the environment, .env (local) or Streamlit secrets. Never shown or logged."""
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(Path(__file__).parent / ".env")
+    except ImportError:
+        pass
+    key = os.environ.get("ANTHROPIC_API_KEY")
+    if not key:
+        try:
+            key = st.secrets.get("ANTHROPIC_API_KEY")
+        except Exception:  # no secrets file
+            key = None
+    return key or None
+
+
+@st.cache_data(show_spinner="Drafting…")
+def live_draft(city: str, row_items: tuple) -> str:
+    key = api_key()
+    if not key:
+        raise RuntimeError("no API key")
+    return D.claude_draft(city, dict(row_items), key)
 
 
 @st.cache_data
@@ -277,6 +303,31 @@ with tab_b:
         if lines:
             st.markdown("**Peers that report completing the same kind of program** "
                         "(where this city's is not completed):\n" + "\n".join(lines))
+
+        st.markdown("**Draft a request** (never sent: copy, review and edit it yourself)")
+        opts = list(show.index)
+        pick = st.selectbox("Program to ask about", opts, key="draft_prog",
+                            format_func=lambda i: (f"[overdue: {show.at[i, 'overdue']}] "
+                                                   f"{show.at[i, 'PROGRAM_NAME']}")[:110])
+        row = show.loc[pick].to_dict()
+        key = api_key()
+        if key and st.button("Draft with Claude", key="draft_btn"):
+            try:
+                st.session_state["draft"] = (city, pick,
+                                             live_draft(title(city), tuple(row.items())))
+            except Exception as e:  # network, auth or model error: fall back and say so
+                st.session_state["draft"] = (city, pick, None)
+                st.warning(f"Live draft unavailable ({type(e).__name__}); showing the template.")
+        saved = st.session_state.get("draft")
+        if saved and saved[:2] == (city, pick) and saved[2]:
+            label = "Draft: review before use (Claude Haiku, claude-haiku-5-5)"
+            text, src = saved[2], "claude"
+        else:
+            label = ("Draft: review before use (static template; "
+                     + ("click the button for a Claude draft)" if key
+                        else "live drafting unavailable: no API key set)"))
+            text, src = D.static_template(title(city), row), "template"
+        st.text_area(label, text, height=300, key=f"draft_text_{city}_{pick}_{src}")
     else:
         st.info(f"No permitting-related programs found for {title(city)} in the 2025 Table D "
                 "extract. Try another city.")

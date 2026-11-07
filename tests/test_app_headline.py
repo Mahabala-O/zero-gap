@@ -48,3 +48,11 @@ def test_tab_b_best_quartile_shows_n():
     for cell, stage in zip(cells, ["ent_to_permit", "permit_to_co"]):
         peers = A.peer_medians(df, None, stage)
         assert f"({int((~peers['same_day']).sum())} cities)" in cell
+
+
+def test_tab_b_explains_co():
+    # UX rubric #5: Tab B's stage table says "Permit → CO"; CO is spelled out next to it.
+    at = AppTest.from_file("app.py", default_timeout=120).run()
+    assert not at.exception
+    caps = [c.value for c in at.caption if "Best quartile" in c.value]
+    assert len(caps) == 1 and "CO = certificate of occupancy" in caps[0]

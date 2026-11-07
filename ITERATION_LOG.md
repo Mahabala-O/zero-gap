@@ -97,3 +97,10 @@
 - Changed: scripts/screenshot.py: `content_height()` reads the scrollHeight of Streamlit's main container (capped at 8,000 px); the "full" shot grows the viewport to that height, captures, then restores it. Fold shots unchanged.
 - Result: check.sh pass; 20 tests. Full-shot height: desktop tab 1 800 -> 1583 px, tab 2 800 -> 2169 px; phone tab 1 -> 1943 px, tab 2 -> 2705 px. First full rubric score (both tabs, desktop + phone): 12/13. Passing: answer first, 4 inputs, one headline per tab, n beside every benchmark, ASSUMPTION next to numbers, one chart with labelled axes and fixed A/B colors, phone headline in first screen, Tab B ends with an unsent draft, no clutter, one small disclaimer. Failing: #5 plain language: Tab B's stage table says "Permit → CO" with no explanation of CO on that tab (Tab A explains it as "Move-in (CO)"). Not timed: #10.
 - Next: (1) Tab B: explain "CO" (certificate of occupancy, move-in) on first use, e.g. in the medians caption (rubric #5). (2) Tab B program table: Program column cuts off the objective snippet at 1280 px; consider a wider column or shorter label. (3) Time a re-render after an input change (rubric #10).
+
+### Round 15 · 12:19 · Tab B spells out "CO" (certificate of occupancy) beside its stage table
+- Category: D
+- Found: Round 14 full UX score 12/13; failing #5 plain language: Tab B's stage table says "Permit → CO" with no explanation on that tab (Tab A explains it only in a date-input help tooltip and "Move-in (CO)" column).
+- Changed: app.py: Tab B medians caption now starts "CO = certificate of occupancy, the sign-off that people can move in." (same wording as Tab A's help text). tests/test_app_headline.py: AppTest checks the caption carries the definition.
+- Result: check.sh pass; tests 20 -> 21. UX rubric 12/13 -> 13/13 on scored items (#10 timing still not measured).
+- Next: (1) Time a re-render after an input change (rubric #10). (2) Tab B program table: Program column cuts off the objective snippet at 1280 px. (3) README: mention the headline flags (separate draws, same-day caution) in "where it's wrong".

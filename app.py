@@ -304,7 +304,8 @@ with tab_b:
                 f"**{n_over}** are past their target date and not reported completed.")
     st.markdown(" ".join(head))
     st.dataframe(pd.DataFrame(stage_rows).set_index("Stage"), use_container_width=True)
-    st.caption("Medians use all unit types and same-row date pairs. Best quartile = 25th "
+    st.caption("CO = certificate of occupancy, the sign-off that people can move in. "
+               "Medians use all unit types and same-row date pairs. Best quartile = 25th "
                f"percentile of city medians among cities with n ≥ {A.MIN_N}, leaving out "
                "same-day (median 0) cities (ASSUMPTION: reporting pattern, not speed).")
 

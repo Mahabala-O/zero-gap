@@ -125,3 +125,10 @@
 - Changed: app.py: the stage table is rendered with st.table, which wraps text, instead of st.dataframe; no data or wording change. tests/test_app_headline.py: the best-quartile test reads at.table instead of at.dataframe (same assertions).
 - Result: check.sh pass; 22 tests. Phone stage-table columns visible without scrolling: 2 of 4 -> 4 of 4 (.ux/tab2-phone-fold.png); desktop unchanged in layout.
 - Next: (1) Program column still cuts the objective snippet at 1280 px. (2) Peer list category labels mix case ("ADU streamlining" vs "fees"); consider a display label map. (3) A person should fill data/tableD_handcheck.csv.
+
+### Round 19 · 12:27 · Tab B Program column is wide enough to read at 1280 px
+- Category: D (a C/E pass over app.py found nothing new: the overdue logic, the best-quartile n and the unknown paths were already tested)
+- Found: queued by rounds 16–18: in .ux/tab2-desktop-full.png (Tustin, 1280 px), Program was a default-width column, so labels were cut well before the objective snippet that tells same-named rows apart.
+- Changed: app.py: the Tab B program table sets `column_config={"Program": TextColumn(width="large")}` (no data or wording change). tests/test_app_headline.py: an AppTest checks the Program column width is "large".
+- Result: check.sh pass; tests 22 -> 23. In the new .ux/tab2-desktop-full.png the full ~60-character name and the start of the objective ("— Up…", "— Est…") are visible. Trade-off: Status is now cut off at the right edge at 1280 px. Overdue already says whether a program is reported completed, and Status is one scroll away.
+- Next: (1) If Status matters on screen, shorten program_labels name_len (e.g. 45) so Status fits too. (2) The peer list's category labels mix case ("ADU streamlining" vs "fees"). (3) A person should fill data/tableD_handcheck.csv.

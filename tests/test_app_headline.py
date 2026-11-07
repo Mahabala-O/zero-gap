@@ -66,3 +66,12 @@ def test_tab_b_target_date_beside_overdue():
     tables = [d.value for d in at.dataframe if "Overdue" in d.value.columns]
     assert len(tables) == 1
     assert list(tables[0].columns[:3]) == ["Overdue", "Target date", "Program"]
+
+
+def test_tab_b_program_column_is_wide():
+    # Round 19: the Program label (with its objective snippet) was cut off at 1280 px.
+    import json
+    at = AppTest.from_file("app.py", default_timeout=120).run()
+    assert not at.exception
+    d = [d for d in at.dataframe if "Overdue" in d.value.columns][0]
+    assert json.loads(d.proto.columns)["Program"]["width"] == "large"

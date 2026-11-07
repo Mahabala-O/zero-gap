@@ -325,7 +325,9 @@ with tab_b:
             "Category": show["category"],
             "Status": show["status_bucket"],
             "City's own status text": show["PROGRAM_STATUS"],
-        }), use_container_width=True, hide_index=True)
+        }), use_container_width=True, hide_index=True,
+            # Wide Program column so the label (and its objective snippet) is readable at 1280 px.
+            column_config={"Program": st.column_config.TextColumn(width="large")})
         open_cats = sorted(set(prog.loc[prog["status_bucket"] != "completed", "category"])
                            - {"other"})
         lines = []

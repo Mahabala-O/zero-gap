@@ -39,7 +39,7 @@ def test_tab_b_best_quartile_shows_n():
     # and that count matches peer_medians (n >= MIN_N, same-day cities left out).
     at = AppTest.from_file("app.py", default_timeout=120).run()
     assert not at.exception
-    tables = [d.value for d in at.dataframe if "OC best quartile (n)" in d.value.columns]
+    tables = [d.value for d in at.table if "OC best quartile (n)" in d.value.columns]
     assert len(tables) == 1
     cells = list(tables[0]["OC best quartile (n)"])
     assert all(c == "unknown" or c.endswith(" cities)") for c in cells)

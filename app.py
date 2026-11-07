@@ -303,7 +303,9 @@ with tab_b:
     head.append(f"**{n_prog}** permitting-related programs in its 2025 report; "
                 f"**{n_over}** are past their target date and not reported completed.")
     st.markdown(" ".join(head))
-    st.dataframe(pd.DataFrame(stage_rows).set_index("Stage"), use_container_width=True)
+    # st.table wraps text, so the benchmark column stays on screen at phone width
+    # (st.dataframe scrolled it off the right edge at 390 px).
+    st.table(pd.DataFrame(stage_rows).set_index("Stage"))
     st.caption("CO = certificate of occupancy, the sign-off that people can move in. "
                "Medians use all unit types and same-row date pairs. Best quartile = 25th "
                f"percentile of city medians among cities with n ≥ {A.MIN_N}, leaving out "

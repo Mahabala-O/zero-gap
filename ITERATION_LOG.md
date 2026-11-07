@@ -118,3 +118,10 @@
 - Changed: app.py: Tab B program table column order is now Overdue, Target date, Program, Category, Status, city's own text (no data or wording change). tests/test_app_headline.py: AppTest checks the first three columns.
 - Result: check.sh pass; tests 21 -> 22. Overdue rows with their target date visible without scrolling at 1280 px: 0 -> all (14 of 14 overdue for Tustin).
 - Next: (1) Program column still cuts the objective snippet at 1280 px (e.g. "— Update ADU Ordinar…"); consider column_config width or a shorter name_len. (2) Phone-width check of Tab B draft section. (3) A person should fill data/tableD_handcheck.csv.
+
+### Round 18 · 12:26 · Tab B stage table keeps the OC benchmark on screen at phone width
+- Category: D
+- Found: screenshot.py → .ux/tab2-phone-full.png (390 px): the Tab B stage table was a scrolling st.dataframe; only Stage and "Tustin median (n)" fit, so the "OC best quartile (n)" benchmark and "Gap" were off the right edge (UX rubric #4, n beside every benchmark, failed on phone).
+- Changed: app.py: the stage table is rendered with st.table, which wraps text, instead of st.dataframe; no data or wording change. tests/test_app_headline.py: the best-quartile test reads at.table instead of at.dataframe (same assertions).
+- Result: check.sh pass; 22 tests. Phone stage-table columns visible without scrolling: 2 of 4 -> 4 of 4 (.ux/tab2-phone-fold.png); desktop unchanged in layout.
+- Next: (1) Program column still cuts the objective snippet at 1280 px. (2) Peer list category labels mix case ("ADU streamlining" vs "fees"); consider a display label map. (3) A person should fill data/tableD_handcheck.csv.

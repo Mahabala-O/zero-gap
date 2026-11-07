@@ -156,18 +156,21 @@ with tab_a:
            if res[k]["method"] != "paired" and res[k]["co_date"]["P80"] != U]
     sep = list(dict.fromkeys(sep))
     if sep:
+        its = "its" if len(sep) == 1 else "their"
         parts.append(f"ASSUMPTION: too few records hold both stages for "
-                     f"{' and '.join(sep)}, so its stages were drawn separately; "
-                     f"treat its P80 as rough.")
+                     f"{' and '.join(sep)}, so {its} stages were drawn separately; "
+                     f"treat {its} P80 as rough.")
     # ASSUMPTION: 50% threshold. Above it, a city's entitlement -> permit times mostly come
     # from rows where both dates are the same day (likely a reporting pattern, INFERRED).
     same = [title(c) for c in dict.fromkeys(picks.values())
             if isinstance(sd := stage_summary(c, unit_cat, "ent_to_permit")["same_day_pct"],
                           (int, float)) and sd >= SAME_DAY_FLAG_PCT]
     if same:
-        parts.append(f"Caution: most of {' and '.join(same)}'s entitlement → permit records "
+        whose = f"{same[0]}'s" if len(same) == 1 else f"{' and '.join(same)}'s each"
+        its = "its" if len(same) == 1 else "their"
+        parts.append(f"Caution: most of {whose} entitlement → permit records "
                      "give the same date for both (likely a reporting pattern, INFERRED), so "
-                     "its speed there may be overstated.")
+                     f"{its} speed there may be overstated.")
     st.markdown(" ".join(parts))
     st.caption("P50 = half of past projects finished by then (likely). "
                "P80 = 80% finished by then (safe to plan). Past performance, not a promise.")

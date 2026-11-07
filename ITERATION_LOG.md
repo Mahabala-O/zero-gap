@@ -76,3 +76,10 @@
 - Changed: analysis.py: `program_labels()`: collapse whitespace, shorten names to 60 chars; where two of a city's shortened names match, add the start of that row's own PROGRAM_OBJECTIVE; if still equal (Costa Mesa overlays differ only at the end), show the end of the name. app.py: Tab B program table "Program" column and the "Program to ask about" picker use these labels (no new text, only the city's own words). tests/test_analysis.py: 2 tests.
 - Result: check.sh pass; tests 16 -> 18. Rows sharing an exact PROGRAM_NAME with another row in the same city: 122 (15 cities); rows with an identical label after this change: 0 of 367.
 - Next: (1) Full UX rubric score from the *-full.png shots. (2) Headline grammar when both cities use separate draws ("its" -> "their"). (3) README: mention the headline flags (separate draws, same-day caution) in "where it's wrong".
+
+### Round 12 · 12:14 · Tab A headline flags read correctly when both cities are flagged
+- Category: C
+- Found: Round 11 queue item. When both picked cities triggered a flag, the headline said "for X and Y, so its stages were drawn separately; treat its P80 as rough" and "most of Anaheim and Fullerton's … records … so its speed there may be overstated", which reads as one combined city.
+- Changed: app.py: both flags use "its" for one city and "their" for two; the same-day caution says "Anaheim and Fullerton's each" for two cities. tests/test_app_headline.py: new AppTest (Anaheim vs Fullerton → plural wording).
+- Result: check.sh pass; tests 18 -> 19. Single-city wording unchanged (existing tests still pass).
+- Next: (1) Full UX rubric score from the *-full.png shots. (2) README: mention the headline flags (separate draws, same-day caution) in "where it's wrong". (3) A person should fill data/tableD_handcheck.csv.

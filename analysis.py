@@ -212,20 +212,35 @@ def _clip(text, n: int) -> str:
     return t if len(t) <= n else t[: n - 1].rstrip() + "…"
 
 
+def _drop_shared_lead(names: pd.Series, min_rows: int = 3) -> pd.Series:
+    """Remove leading words shared by every name in the group (whole words only)."""
+    words = [t.split(" ") for t in names]
+    if len(words) < min_rows:
+        return names
+    k = 0
+    while all(len(w) > k + 1 and w[k] == words[0][k] for w in words):
+        k += 1
+    return names if k == 0 else pd.Series([" ".join(w[k:]) for w in words], index=names.index)
+
+
 def program_labels(prog: pd.DataFrame, name_len: int = 60, obj_len: int = 60) -> pd.Series:
     """Short program labels that tell same-named rows apart.
 
-    Whitespace is collapsed. When two of a city's names look the same once shortened, the
-    label adds the start of that row's own PROGRAM_OBJECTIVE (and, if still the same,
+    Whitespace is collapsed. Leading words that every one of a city's names shares (when it
+    has at least 3 programs, e.g. Tustin's "6th HE Cycle") are left out, so the label budget
+    goes to the words that differ. When two of a city's names look the same once shortened,
+    the label adds the start of that row's own PROGRAM_OBJECTIVE (and, if still the same,
     shows the end of the name), so rows stay distinct.
     """
-    out = prog["PROGRAM_NAME"].map(lambda t: _clip(t, name_len))
+    names = prog["PROGRAM_NAME"].map(lambda t: _clip(t, 10_000))
+    names = names.groupby(prog["JURIS_NAME"]).transform(_drop_shared_lead)
+    out = names.map(lambda t: _clip(t, name_len))
     dup = out.groupby(prog["JURIS_NAME"]).transform(lambda s: s.duplicated(keep=False))
     obj = prog["PROGRAM_OBJECTIVE"].map(lambda t: _clip(t, obj_len) or "objective unknown")
     out[dup] = out[dup] + " — " + obj[dup]
     # Still the same (names differ only near the end): show the end of the name instead.
     dup = out.groupby(prog["JURIS_NAME"]).transform(lambda s: s.duplicated(keep=False))
-    tail = prog["PROGRAM_NAME"].map(lambda t: _clip(t, 10_000)).map(
+    tail = names.map(
         lambda t: t if len(t) <= name_len else "…" + t[-(name_len - 1):].lstrip())
     out[dup] = tail[dup] + " — " + obj[dup]
     return out

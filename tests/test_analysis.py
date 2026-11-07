@@ -132,3 +132,20 @@ def test_program_labels_names_differing_only_at_the_end():
     lab = an.program_labels(prog)
     assert lab.nunique() == 2
     assert "Airport Area" in lab.iloc[0] and "17th Street Area" in lab.iloc[1]
+
+
+def test_program_labels_drop_words_every_name_in_a_city_shares():
+    prog = pd.DataFrame({
+        "JURIS_NAME": ["A", "A", "A", "B", "B"],
+        "PROGRAM_NAME": ["6th HE Cycle  Goal 1: Supply", "6th HE Cycle 1.5 Zoning",
+                         "6th HE Cycle 1.7 ADU", "PP-B.5: Staff", "PP-G.2: Ordinances"],
+        "PROGRAM_OBJECTIVE": ["a", "b", "c", "d", "e"],
+    })
+    lab = an.program_labels(prog).tolist()
+    assert lab[:3] == ["Goal 1: Supply", "1.5 Zoning", "1.7 ADU"]
+    assert lab[3:] == ["PP-B.5: Staff", "PP-G.2: Ordinances"]   # 2 rows, no whole shared word
+    # A name made only of the shared words is never emptied.
+    same = an.program_labels(pd.DataFrame({"JURIS_NAME": ["A"] * 3,
+                                           "PROGRAM_NAME": ["Fees", "Fees x", "Fees y"],
+                                           "PROGRAM_OBJECTIVE": ["a", "b", "c"]}))
+    assert same.tolist()[0].startswith("Fees")

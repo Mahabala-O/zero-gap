@@ -1,8 +1,15 @@
-# Iteration log: Permit Clock build and improve rounds
+# Permit Clock iteration log
 
-### Round 1 · 11:38 · Build step 1: fetch OC APR Table A2 and Table D extracts
+### Round 1 · 11:37 · Step 1: fetch_apr.py and cached CSVs
 - Category: B
-- Found: no `data/`, no `app.py`; build step 1 of `prompts/01-build.md` not started.
-- Changed: added `scripts/fetch_apr.py` (CKAN datastore API, 5,000-row pages, 1 s sleep; A2 keeps only the needed columns, drops address/project name/notes/coordinates; APN kept for cross-year linking only, never for the UI). Ran it once: `data/oc_apr_a2.csv`, `data/oc_apr_tableD.csv`, `data/SOURCES.json`.
-- Result: check.sh pass. A2 = 53,578 OC rows 2018-2025 (2018 7,416 · 2019 5,590 · 2020 5,213 · 2021 6,811 · 2022 6,773 · 2023 7,121 · 2024 7,456 · 2025 7,198), matches NOTES' ~54k. Table D = 8,623 rows 2018-2025, 1,822 for 2025 (matches ~1.8k); 362 of the 2025 rows match the permit keywords. Table D covers all 35 jurisdictions; A2 has 34: LAGUNA WOODS has no A2 rows in this resource (treat as "unknown", not zero).
-- Next: build step 2 `analysis.py` (durations, cross-year linking counts, `summary`, `monte_carlo`) with pytest tests; then step 3 Tab A.
+- Found: build not started. Result: data/oc_apr_a2.csv (53,578 rows) and data/oc_apr_tableD.csv (8,623 rows, all years) cached with SOURCES.json.
+- Changed: scripts/fetch_apr.py (committed in round 1; CSVs were left untracked).
+- Result: see round 2 for commit of the CSVs.
+- Next: step 2 analysis.py.
+
+### Round 2 · 11:50 · Step 2 (part 1): analysis.py durations, summary, link counts + tests
+- Category: B
+- Found: no analysis.py. CSVs untracked; committed now (address, project name, notes, lat/long columns already dropped; APN kept for linking, never shown in UI).
+- Changed: analysis.py (add_durations, count_negatives, summary with MIN_N=30 ASSUMPTION -> "unknown", link_counts); tests/test_analysis.py (3 tests); data/*.
+- Result: check.sh pass; 3 tests. Negatives dropped: 96 ent->permit, 73 permit->CO. Cross-year links: 11,461 by tracking ID vs 6,670 by APN (identifier matches only, not used yet). Tustin ent->permit n=573, median 20.2 months (= ~616 days, matches NOTES.md).
+- Next: monte_carlo() in analysis.py (paired draws, independent fallback labelled ASSUMPTION) with tests; then app.py Tab A.

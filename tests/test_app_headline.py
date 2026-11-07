@@ -315,3 +315,22 @@ def test_tab_b_headline_says_furthest_behind_not_slowest():
     text = " ".join(m.value for m in at.markdown)
     assert "Slowest stage" not in text
     assert "Furthest behind: **" in text
+
+
+def test_tab_b_headline_says_when_only_one_stage_compared():
+    # Brea: Entitlement -> permit is unknown (n below MIN_N), only Permit -> CO has a gap.
+    # "Furthest behind" alone implied a ranking across stages that was never made.
+    at = AppTest.from_file("app.py", default_timeout=120).run()
+    at.selectbox(key="city_b_tab").set_value("BREA").run()
+    assert not at.exception
+    text = " ".join(m.value for m in at.markdown)
+    assert "Furthest behind: **Permit → CO**" in text
+    assert "the only stage that can be compared" in text
+
+
+def test_tab_b_headline_no_only_stage_note_when_both_compared():
+    at = AppTest.from_file("app.py", default_timeout=120).run()  # Tustin: both stages known
+    assert not at.exception
+    text = " ".join(m.value for m in at.markdown)
+    assert "Furthest behind: **" in text
+    assert "the only stage that can be compared" not in text

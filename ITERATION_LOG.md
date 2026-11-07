@@ -314,3 +314,10 @@
 - Changed: app.py: headline now reads "Furthest behind: **<stage>**, about N months behind the fastest quarter of OC cities." README.md: Tab B quote and persona row updated to match. tests/test_app_headline.py: the new test.
 - Result: check.sh pass; tests 41 -> 42. Headlines using "Slowest stage" for a relative gap: 1 -> 0.
 - Next: (1) A person should fill data/tableD_handcheck.csv and put the accuracy in the README. (2) A person should confirm .env.example holds only ANTHROPIC_API_KEY=. (3) Make the repo public before 14:30.
+
+### Round 46 · 13:17 · Tab B headline says when only one stage could be compared
+- Category: C (wording implied a comparison that was not made)
+- Found: 13 of 34 cities (e.g. Brea, Anaheim, Irvine, Costa Mesa, Garden Grove) have a known gap on only one of the two stages; the other is unknown (n below MIN_N) or same-day. The headline still said "Furthest behind: **Permit → CO**", implying it ranked both stages. New test `test_tab_b_headline_says_when_only_one_stage_compared` (Brea) fails on the old code.
+- Changed: app.py: when fewer stages have a gap than exist, the headline adds "(the only stage that can be compared; the other is unknown or same-day)". tests/test_app_headline.py: the Brea test plus `test_tab_b_headline_no_only_stage_note_when_both_compared` (Tustin).
+- Result: check.sh pass; tests 42 -> 44. Cities with an implied two-stage ranking from one stage: 13 -> 0.
+- Next: (1) README Tab B bullet could mention the one-stage note. (2) A person should fill data/tableD_handcheck.csv and put the accuracy in the README. (3) Make the repo public before 14:30.

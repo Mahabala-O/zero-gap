@@ -330,7 +330,10 @@ with tab_b:
             # "Furthest behind", not "slowest": the largest gap to the benchmark need not be
             # the stage that takes the longest in absolute months.
             head.append(f"Furthest behind: **{slow}**, about **{months(gaps[slow])}** behind the "
-                        "fastest quarter of OC cities.")
+                        "fastest quarter of OC cities"
+                        # With one comparable stage, "furthest behind" would imply a ranking.
+                        + (" (the only stage that can be compared; the other is unknown or "
+                           "same-day)." if len(gaps) < len(STAGE_LABELS) else "."))
         else:
             head.append(f"{title(city)} is at or ahead of the fastest quarter of OC cities "
                         "on the stages it reports.")

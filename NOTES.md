@@ -3,265 +3,299 @@
 Written Sat Nov 7, 2026, during the exploration session. Read this, then CLAUDE.md, before writing code.
 Prototype only. Not legal, financial or lending advice.
 
-## The decision
+## The decision (locked)
 
-**Build "Permit Clock": a city-by-city timeline benchmark for Orange County, built from the
-state's own permit reports. It turns "how long will this take in this city?" into months, with
-the sample size shown, and turns the difference between two cities into dollars added to the
-gap.**
+**Build "Permit Clock", one Streamlit app with two tabs, both built on the state's own housing
+reports for Orange County:**
 
-- Lane: 2 Clear it, with a bridge into Lane 3 (time cost becomes gap dollars).
-- Runner-up: Rate-to-Gap sensitivity (Lane 3). Not picked because the affordable-cost formula
-  (HSC 50052.5) has to be read by hand from a site that blocks automated fetching, and getting
-  the formula wrong breaks the whole tool.
+- **Tab A, Plan my project.** For a nonprofit project manager: a Monte Carlo schedule forecast
+  from real permit timelines. It gives likely (P50) and safe-to-plan (P80) dates, the carrying
+  cost at each, a contingency to budget, which stage drives the risk, and which of two cities is
+  faster.
+- **Tab B, City promise tracker.** For city staff or an advocate: the city's slowest stage
+  versus its OC peers, and what the city **promised** in its housing element about permitting
+  (APR Table D), sorted by Claude into type and status, with overdue items flagged. It also
+  lists the peer cities that finished the same kind of program, and drafts (does not send) a
+  request that quotes the city's own commitment.
 
-> **Status (update):** the team wants the tool to suggest actions, not only show bottlenecks. A
-> second round of data search is below ("More public data, round 2"). The final scope is still
-> open; the APR Table A2 work stays the base in every option.
+Lane: 2 Clear it, with a bridge to Lane 3 (time cost becomes gap dollars).
 
-## More public data, round 2 (checked 2026-11-07)
+Why both: Tab A is the analytics core. Tab B turns the finding into an action that someone could
+take next month. They share the same stage-time table, so B is an extra view of the same data,
+not a second project.
 
-None of these are in the starter DATA-SOURCES lists. All loaded today with metadata or
-small-sample calls only.
-
-| Dataset | What it adds | OC coverage today | URL / ID |
-|---|---|---|---|
-| **APR Table D: housing-element program implementation** | Each city's promised programs (e.g. ADU streamlining, permit-time review, objective design standards, CUP removal) with objective, target date and free-text status | 1,822 OC rows in report year 2025, 35 jurisdictions; 721–1,822 rows per year 2018–2025 | data.ca.gov APR dataset, resource `37724925-2014-4646-ade8-3ba9f3ff9fb8` |
-| APR Table A (applications) | `APP_SUBMIT_DT`, status. Possible submit→entitlement stage via APN or tracking-ID join | 358,228 rows statewide | `c78b769d-cc02-4050-91ef-79ded665b5a8` |
-| APR Table C (rezoning sites), G (land transferred), H (surplus land), I/E/F/F2/K/L | Rezone dates, surplus parcels, other housing-element reporting | Not counted for OC yet | same dataset (IDs in the CKAN `package_show`) |
-| HCD Housing Element Compliance Report | Compliance status per city | OC 6th cycle: 33 "In", 2 "Out" (jurisdiction rows) | `2dcd1cd4-1348-4fc5-9c9c-219f82daac00` |
-| HCD 6th-cycle RHNA Progress | Units permitted vs target by income level | 539 jurisdictions statewide | `1e80a9cf-724c-432d-8374-e9708a6a92dc` |
-| HCD SB 35 determination map | Is streamlining available in this city | ArcGIS service, updated 2025-06 | https://data.ca.gov/dataset/streamlined-ministerial-approval-process-sb35-determination-map |
-| **CA State Controller, City Expenditures** | Planning and "Construction and Engineering Regulation" spending per city per fiscal year: a staffing/capacity proxy | All 34 OC cities, FY 2022–2025 | https://bythenumbers.sco.ca.gov (Socrata `ju3w-4gxp`, updated 2026-10-28) |
-| **LA City LADBS permits submitted 2020–present** | Real submitted→issued→CofO dates, ADU flag. The stage OC does not publish | 2024 ADU permits: 6,957 submitted, 5,769 issued, 3,333 with CofO | https://data.lacity.org Socrata `gwh9-jnip` (updated 2026-11-02); issued view `pi9x-tg5x` |
-| **San Diego development permits** | Project create, deemed-complete, approval create/issue dates, affordable unit counts | Header read only | https://data.sandiego.gov/datasets/development-permits/ |
-
-Notes:
-- Table D statuses are free text ("Project is delayed.", "Ongoing as projects are submitted
-  and reviewed.", "Completed. In December 2024, the City adopted Objective Design Standards…").
-  Classifying it needs Claude. Do it once at build time and cache it to CSV, then hand-check a sample.
-- Example (2025 APR, Tustin): objective "Update website with ADU permit guidance", target
-  2022-06-01, status "Project is delayed." Show it beside the A2 timeline, but never claim the
-  delay *caused* slower permits.
-- LA and San Diego are SoCal but not OC. Use them only as a labelled reference for the stages
-  OC does not measure, never as an OC number.
-- LADBS, San Diego and APR tables C/G/H include street addresses. Keep everything at city level.
-  Drop address and free-text notes columns at fetch time.
-
-## The user (made up, from `lanes/2-clear-it/scenarios.json`, C02)
-
-A nonprofit project manager with a small project (ADU or 2–4 units) that could go in one of two
-OC cities. "Which city gets me to a ministerial approval faster?"
+## The users (made up, from `lanes/2-clear-it/scenarios.json`)
 
 | | Before | After |
 |---|---|---|
-| Timeline | One rule of thumb: about 4 years, land to keys (brief; ASSUMPTION, not a measurement) | Median and middle-50% range, in months, per stage, per city, from the state's permit reports, with sample size n |
-| Comparing two cities | Phone calls and anecdotes. No open permit data in OC (Lane 2 DATA-SOURCES) | Side by side for City A and City B. "Unknown" where a city did not report the dates |
-| Money | Time cost is a vague line on the pro forma | Months of difference × carrying cost per month (ASSUMPTION, editable) = $ added to the gap |
-| Trust | No way to tell if a number is solid | A data-coverage score per city: how many of its rows have the dates needed |
+| **C02, nonprofit project manager**, small project (ADU, 2–4 or 5+ units) that could go in one of two OC cities | One rule of thumb: about 4 years, land to keys (brief; ASSUMPTION, not a measurement). Phone calls. No open permit data in OC | P50/P80 dates per stage for City A vs City B, with sample size n. Contingency $ = P80 cost − P50 cost. "City B is about N months faster at P80, about $Y less carrying cost." "Unknown" where a city did not report |
+| **C03, city permit tech, housing staff or advocate** | Housing-element programs are buried in annual-report text. Nobody tracks which permitting promises are overdue | "Your slowest stage is X, N months behind the fastest quarter of OC cities. You have K permitting programs; J are past their target date. Peers A and B completed the same kind of program." Plus a drafted, unsent request quoting the promise |
 
-Portfolio "before vs after" to quantify on the day: number of OC cities with a usable benchmark
-(n ≥ 30) per stage, and the dollar gap difference for one city pair.
+Portfolio "before vs after" to measure on the day:
+- How many OC cities have a usable benchmark (n ≥ 30) per stage.
+- The P80 contingency $ for one city pair.
+- How many OC permitting promises are past their target date.
+- How accurate Claude's classification was on a hand-checked sample (e.g. 18 of 20 correct).
 
-## What we found in the data today (preliminary, checked 2026-11-07)
+## Data findings so far (preliminary, checked 2026-11-07)
 
-Source: HCD Housing Element APR Table A2 via the data.ca.gov CKAN API (resource
-`fe505d9b-8c36-42ba-ba30-08bc4f34e022`). These are quick unfiltered queries: every unit type and
-tenure, 2018–2025 report years, and only rows that hold both dates in the same row. The build has
-to redo them properly.
+From quick, unfiltered queries on APR Table A2 (`fe505d9b-8c36-42ba-ba30-08bc4f34e022`). These
+count only rows that hold both dates in the same row. Redo them properly in the build.
 
-- About 54,000 Orange County rows, 2018–2025 (5,213 to 7,456 per year).
-- Entitlement-to-permit, in rows that hold both dates: median 616 days in Tustin (n=573), 602 in
-  Buena Park (n=443), 789 in Stanton (n=129), 993 in Los Alamitos (n=38), 99.5 in Orange (n=162),
-  52 in Santa Ana (n=109).
-- **Anaheim (n=2,663) and Fullerton (n=1,626) show a median of 0 days.** The entitlement and
-  permit dates are the same. That probably reflects how they report (for example ministerial
-  ADUs). This is INFERRED, not confirmed. Show it as a reporting pattern, not "fastest city".
-- **Gaps in the big cities.** Irvine has 16,084 rows but only 62 entitlement dates. Huntington
-  Beach has 954 rows with a permit date and **0** completion (CO) dates. Costa Mesa has 56
-  entitlement dates in 1,192 rows. For these cities the entitlement stage is "unknown" unless rows
-  can be linked across years by APN or tracking ID.
-- Permit-to-completion (build) is the best-covered stage: median 262 days in Anaheim, 373 in
-  Fullerton, 701 in Mission Viejo.
-- **Sources disagree:** BackyardADU.net says the City of Orange ADU median from permit to CO is
-  263 days. Our unfiltered all-types query gave 190 days (n=162). They are different populations
-  (ADU only vs all types, different linking). Show both, and do not pick one silently.
-- 17 jurisdictions have at least 30 same-row entitlement-plus-permit pairs (2 of them show the
-  0-day pattern). Preliminary.
-- APR Table A (`c78b769d-cc02-4050-91ef-79ded665b5a8`, 358,228 rows statewide) has
-  `APP_SUBMIT_DT` and `APPLICATION_STATUS` but no approval date. Joining it to A2 by APN or
-  tracking ID could add an application-to-entitlement stage. Stretch goal only.
+- About 54,000 OC rows for 2018–2025. Unit categories: SFD 26,165, ADU 18,808, SFA 4,176,
+  5+ 2,875, 2 to 4 1,458, MH 96.
+- **Comparing legal paths is not possible:** only 32 OC rows carry an SB 35 approval
+  (`APPROVE_SB35='Y'`) and about 113 rows carry SB 9. Do not build a "file under law X" feature.
+- Only 513 OC rows hold building permits with deed-restricted affordable units (5,947 units).
+  Benchmarks for affordable projects alone will be thin, so fall back to all projects and say so.
+- Entitlement→permit medians: Tustin 616 days (n=573), Buena Park 602 (n=443), Stanton 789
+  (n=129), Los Alamitos 993 (n=38), Orange 99.5 (n=162), Santa Ana 52 (n=109).
+- **Anaheim (n=2,663) and Fullerton (n=1,626) show a median of 0 days.** The entitlement date
+  equals the permit date. This is probably how those cities report; that reading is INFERRED.
+  Show it as "same-day (reporting pattern?)", never as "fastest".
+- **Reporting gaps:** Irvine has 16,084 rows but only 62 entitlement dates. Huntington Beach has
+  954 permit dates and 0 completion (CO) dates. Costa Mesa has 56 entitlement dates in 1,192 rows.
+- ADU permit→CO medians among cities with n ≥ 30 run from San Clemente 147 days (n=41) to
+  Fullerton 328 (n=932). Yorba Linda shows 31 days (n=31), which looks suspicious.
+- **Sources disagree:** BackyardADU.net gives 263 days permit→CO for City of Orange ADUs. Our
+  ADU-only query gave 187.5 (n=86), and the all-types query gave 190. Show both.
+- Table D example (2025 APR, Tustin): objective "Update website with ADU permit guidance", target
+  2022-06-01, status "Project is delayed." Show it beside the timeline, but never claim it caused
+  the delay.
 
 ## Scope
 
-**Must work (the demo):**
-1. A cached OC extract of APR Table A2 in the repo (only the needed columns; see Data and privacy).
-2. Stage durations per city: entitlement→permit, permit→CO. Show median, P25, P75, n, and %
-   coverage. Filter by unit category (`UNIT_CAT`, e.g. ADU vs 2-4 vs 5+) and by year.
-3. Compare two cities side by side, with "unknown" when n < 30 (ASSUMPTION: threshold chosen by
-   us, editable).
-4. A cost-of-delay panel: months of difference × carrying cost per month = $ on the gap.
-   - The default carrying cost per month is an ASSUMPTION: the brief's synthetic $85k of time
-     costs ÷ 48 months ≈ $1,771 per home per month. Label it SYNTHETIC/ASSUMPTION, and let the
-     user type their own.
-5. A sources panel on screen: dataset URL, resource ID, date pulled, row counts, and the caveats
-   above.
+**Must work:**
+1. Cached OC extracts in `data/`: APR Table A2 (needed columns only) and APR Table D (OC only).
+   Plus `data/SOURCES.json` with URL, resource ID, pulled-at time and row counts.
+2. `analysis.py`: stage durations per record (entitlement→permit, permit→CO). Summary by city ×
+   unit category with n, P25/P50/P75/P80 and coverage %. Cells with n < 30 show "unknown"
+   (ASSUMPTION: the threshold is a parameter).
+3. **Tab A:**
+   - Inputs: City A and City B, unit category, start date, carrying cost per month.
+   - Monte Carlo (e.g. 5,000 draws): resample stage durations from that city × unit category.
+     Where a record has both stages, draw them together, which keeps the link between the
+     stages. Otherwise draw them independently, labelled ASSUMPTION.
+   - Outputs: P50/P80 dates for permit and CO, carrying cost P50/P80, contingency, a chart of
+     which stage adds the most spread, and a side-by-side for the two cities.
+   - The default carrying cost is $1,771/month: ASSUMPTION derived from the SYNTHETIC deal
+     ($85k ÷ 48 months). It must be editable and labelled on screen.
+4. **Tab B:**
+   - Pick a city. Show its stage medians versus the OC peer best quartile.
+   - Show its Table D permitting-related programs with Claude's classification:
+     - category: ADU streamlining, pre-approved plans, permit-time review, objective standards,
+       fees, process/CUP removal, other
+     - status bucket: completed, ongoing, delayed, not started, unclear
+     - overdue flag: target date before today and not completed
+     - the source text beside each row
+   - List peers that completed the same category.
+5. A sources and caveats panel on both tabs, and a "prototype, not legal or financial advice"
+   footer.
 
-**Cut first, in this order (and label it "mocked" or "not built" in the README):**
-1. Claude memo: replace with a static template sentence.
-2. Cross-year record linking by APN or tracking ID: fall back to same-row pairs only, and say so.
-3. Survival curve (Kaplan-Meier for projects with a permit but no CO yet): skip it and show medians only.
-4. Table A join (application-to-entitlement): skip it.
-5. Map: skip it. A table and bar chart are enough.
+**Cut first, in this order (and label what's cut in the README):**
+1. State Controller spending per permit (capacity proxy).
+2. The LA and San Diego reference benchmarks for the submitted→issued stage.
+3. The drafted request in Tab B: replace it with a static template.
+4. Linking records across report years: use same-row pairs only and say so.
+5. The Claude memo on Tab A.
+6. If Claude classification fails or runs late, use keyword rules, labelled "keyword match, not
+   reviewed".
 
-**Never:** invent a city timeline, fee or deadline. Never claim a city "violates" a law. The data
-cannot show that.
+**Never:**
+- invent a timeline, fee, deadline or statute
+- say a city "violates" a law
+- say a program caused a speed-up (the data only shows association)
+- show individual addresses
 
 ## How Claude is used inside the tool
 
-- Claude Haiku 5.5 (`claude-haiku-5-5`) writes a 3–4 sentence plain-language memo for the PM
-  from the computed comparison table. The app sends only the small table (numbers, n, coverage,
-  source date), never raw rows. The prompt says to use only the numbers given and to say
-  "unknown" where n is too small.
-- Cache by (city A, city B, unit type, years) with `st.cache_data`, so each combination is called
-  once. Expect cents for the whole day.
-- The app works without an API key. The memo panel says "memo unavailable" instead.
-- **A person checks** that every number in the memo matches the table shown beside it. The memo
-  is labelled "Drafted by Claude: check against the table."
-- Optional: Claude drafts (does not send) a short question to a city's permit desk about missing
-  data. The rules allow drafting only.
+| Use | Model | When | What a person checks |
+|---|---|---|---|
+| Classify Table D programs (category, status bucket, target date parsed) | Claude Haiku 5.5 (`claude-haiku-5-5`) | **Once at build time**, in a batch script. Keyword-filter first, about 20 rows per call, JSON out, results committed to `data/tableD_classified.csv`. The app reads the CSV and makes no live calls | Hand-check 20 random rows; record the accuracy in the README. The UI shows source text next to every label |
+| Draft a request quoting the city's own program (not sent) | Haiku 5.5, live, cached | Tab B button | The user reads and edits it; the tool never sends anything |
+| Optional 3-sentence memo from the Tab A comparison table | Haiku 5.5, live, cached | Tab A | Numbers must match the table shown beside it |
 
-## Plan (assumes the build starts around 10:45; shift if later)
+- The app must run with no API key: classifications come from the CSV, and the live features
+  show "unavailable".
+- Before running the batch, estimate its cost with the token-counting endpoint. Prompts must say
+  "use only the text given; answer `unclear` if the status does not say."
+
+## Plan (assumes the build starts around 11:00; shift everything if later)
 
 | Time | Do | Done when |
 |---|---|---|
-| 10:45–11:15 | Repo skeleton, `requirements.txt`, `scripts/fetch_apr.py` pulls OC A2 via API (paged), saves `data/oc_apr_a2.csv` | CSV committed, row count printed and matches about 54k |
-| 11:15–12:00 | `analysis.py`: clean dates, stage durations, coverage, medians/P25/P75/n by city × unit type | A table printed for Tustin vs Santa Ana. **Commit.** |
-| 12:00–12:30 | `app.py` (Streamlit): city pickers, unit-type filter, side-by-side table, bar chart, sources panel | Runs locally. **Commit + push.** Lunch while it deploys |
-| 12:30–1:00 | Cost-of-delay panel with the ASSUMPTION carrying cost. Deploy to Streamlit Community Cloud | Live URL works signed out |
-| 1:00–1:30 | Claude memo (cached), or cut it. Cross-year linking if time allows | **Demo freeze at 1:30.** |
-| 1:30–2:00 | README from `templates/TEAM-README.md`: user, before/after, Try it, sources table, real vs mocked, where it's wrong | README on `main` |
-| 2:00–2:15 | 30-second video: one user, two cities, the months, the dollars, the sources | MP4 ready |
-| 2:15–2:30 | Check: repo public (open it signed out), no keys (`git log -p | grep -i "sk-ant"`), no personal info, everything on `main`. Submit the form | Submitted before 2:30 |
+| 11:00–11:25 | Skeleton, `requirements.txt`, `scripts/fetch_apr.py` for A2 and Table D (OC, paged, sleep between pages, drop address/notes columns) | CSVs committed; row counts match about 54k (A2) and about 1.8k for 2025 (D) |
+| 11:25–12:05 | `analysis.py`: durations, summary table, Monte Carlo function | Tustin vs Santa Ana P50/P80 printed. **Commit + push** |
+| 12:05–12:35 | `app.py` Tab A | Runs locally. **Commit + push**. Deploy to Streamlit Community Cloud now (lunch while it builds) |
+| 12:35–1:05 | `scripts/classify_tableD.py` (Haiku batch) → CSV; hand-check 20 rows | CSV committed, accuracy noted |
+| 1:05–1:30 | Tab B: peer comparison, program table, overdue flags, drafted request | **Demo freeze at 1:30.** Live URL works signed out |
+| 1:30–2:00 | README from `templates/TEAM-README.md`: users, before/after, Try it, sources, real vs mocked, where it's wrong | On `main` |
+| 2:00–2:15 | 30-second video: project manager picks a city (Tab A), then the overdue promise (Tab B) | MP4 ready |
+| 2:15–2:30 | Repo public (check signed out). No keys (`git log -p \| grep -i sk-ant`). No personal info. Everything on `main`. Submit the form | Submitted |
 
 ## Stack
 
-- **Streamlit (Python)**. It is analyst-native: pandas, plotting and a UI in one file, with no
-  frontend work. That suits a solo analyst better than Next.js.
-- **Deploy:** Streamlit Community Cloud (share.streamlit.io). Connect the public GitHub repo, set
-  main file `app.py`, add `ANTHROPIC_API_KEY` under app Secrets (never in git). Fallback: run
-  locally and screen-record.
-- **Pinned deps** (`requirements.txt`). These are known-good versions. In the terminal session,
-  install them, run `pip freeze`, and pin exactly what you tested:
+- **Streamlit (Python)**, one `app.py` using `st.tabs`. pandas and numpy for the Monte Carlo,
+  plotly for the charts.
+- **Deploy:** Streamlit Community Cloud from the public repo. Main file `app.py`. Put
+  `ANTHROPIC_API_KEY` in the app's Secrets, never in git.
+- **Pinned deps** (`requirements.txt`). These are known-good starting versions. Install them,
+  then pin exactly what you tested with `pip freeze`. If the old `anthropic` pin rejects
+  `claude-haiku-5-5`, upgrade the SDK and re-pin.
   ```
   streamlit==1.40.0
   pandas==2.2.3
+  numpy==2.1.3
   plotly==5.24.1
   requests==2.32.3
   anthropic==0.39.0
   ```
-  Use Python 3.11 or 3.12. Add a `runtime.txt` or set the Python version in Community Cloud. The
-  `anthropic` pin is old: if `claude-haiku-5-5` is rejected, upgrade the SDK and re-pin.
-- `.env.example` holds the line `ANTHROPIC_API_KEY=` only. `.env` is already git-ignored (check
-  `.gitignore`).
+- Python 3.11 or 3.12. `.env.example` holds only the line `ANTHROPIC_API_KEY=`.
 
-## Datasets (all checked 2026-11-07 unless noted)
+## Running Claude Code and controlling it from a phone
 
-| Dataset | URL | Status today |
+- Remote Control (drive the laptop's terminal session from the Claude phone app) needs Claude
+  Code **signed in with a claude.ai Pro, Max, Ultra, Team or Enterprise plan. API keys are not
+  supported.** Source: https://code.claude.com/docs/en/remote-control ("Requirements"), checked
+  2026-11-07.
+- So split the two uses:
+  - **Claude Code itself:** sign in with your claude.ai plan (`/login`). Start it with
+    `claude --remote-control "Permit Clock"`, then scan the QR code (run `/remote-control` to
+    show it) or open the session at claude.ai/code on the phone.
+  - **The app's own Claude calls** (the Table D batch, drafts, memo): use the **event API
+    credits** through `ANTHROPIC_API_KEY` in `.env` (local) and Streamlit Secrets (deployed).
+- Don't `export ANTHROPIC_API_KEY` in the terminal that runs `claude`. Claude Code may pick the
+  key up instead of your plan login, and then Remote Control won't connect. Let the app load the
+  key from `.env` (e.g. with `python-dotenv`, or `st.secrets` when deployed).
+- The laptop must stay awake and online. Remote Control runs on the laptop; the phone only
+  steers it.
+
+## Datasets (all checked 2026-11-07)
+
+| Dataset | URL / ID | Status today |
 |---|---|---|
-| HCD APR Table A2 (entitlements, permits, COs) | https://data.ca.gov/dataset/housing-element-annual-progress-report-apr-data-by-jurisdiction-and-year · API `https://data.ca.gov/api/3/action/datastore_search?resource_id=fe505d9b-8c36-42ba-ba30-08bc4f34e022` and `datastore_search_sql` | Works. 927,011 rows statewide. Filter `CNTY_NAME='Orange'`. Field is `JURIS_NAME` (not `JURS_NAME`) |
-| HCD APR Table A (applications) | same dataset, resource `c78b769d-cc02-4050-91ef-79ded665b5a8` | Works. 358,228 rows. Stretch only |
-| BackyardADU.net build_times.csv (third party, cross-check only) | https://backyardadu.net/data/build_times.csv | 200 OK. Cite the APR for anything official |
-| Brief's 4-year baseline (ASSUMPTION) | `lanes/2-clear-it/data/timeline.json`, `docs/challenge-brief.pdf` | Rounded estimates, not measurements |
+| HCD APR Table A2 (entitlement, permit, CO dates) | https://data.ca.gov/dataset/housing-element-annual-progress-report-apr-data-by-jurisdiction-and-year · resource `fe505d9b-8c36-42ba-ba30-08bc4f34e022` · `datastore_search` / `datastore_search_sql` | Works. 927,011 rows statewide. Filter `CNTY_NAME='Orange'`. The city field is `JURIS_NAME` |
+| **HCD APR Table D (housing-element program implementation)** | same dataset, resource `37724925-2014-4646-ade8-3ba9f3ff9fb8` | Works. 147,691 rows statewide. 1,822 OC rows in 2025, 35 jurisdictions. Fields: `JURIS_NAME`, `YEAR`, `PROGRAM_NAME`, `PROGRAM_OBJECTIVE`, `ACCOMPLISHED_DT` (target), `PROGRAM_STATUS` (free text). Filter OC by the list of 34 city names plus `ORANGE COUNTY` (no county column) |
+| HCD APR Table A (applications, `APP_SUBMIT_DT`) | resource `c78b769d-cc02-4050-91ef-79ded665b5a8` | Works. 358,228 rows. Stretch only |
+| HCD Housing Element Compliance Report | resource `2dcd1cd4-1348-4fc5-9c9c-219f82daac00` | Works. OC 6th cycle: 33 In, 2 Out |
+| HCD 6th-cycle RHNA progress | resource `1e80a9cf-724c-432d-8374-e9708a6a92dc` | Works. Context only |
+| CA State Controller, City Expenditures (Planning; Construction and Engineering Regulation) | https://bythenumbers.sco.ca.gov Socrata `ju3w-4gxp` | Works. All 34 OC cities, FY2022–2025. Stretch (cut 1) |
+| LA City LADBS permits submitted 2020–present | https://data.lacity.org Socrata `gwh9-jnip` (issued view `pi9x-tg5x`) | Works, updated 2026-11-02. `adu_changed` is text. Reference only, not OC (cut 2) |
+| San Diego development permits | https://data.sandiego.gov/datasets/development-permits/ | CSV header read only. Reference only (cut 2) |
+| BackyardADU.net build_times.csv (third party, cross-check) | https://backyardadu.net/data/build_times.csv | 200 OK. Cite the APR for anything official |
+| Brief's 4-year baseline (ASSUMPTION) | `lanes/2-clear-it/data/timeline.json` | Rounded estimates |
 | Synthetic deal ($85k time cost) | `lanes/3-fund-it/data/synthetic-example-deal.json` | SYNTHETIC. Never present it as real |
-| Freddie Mac PMMS (only if the rate-sensitivity stretch is built) | https://www.freddiemac.com/pmms/docs/PMMS_history.csv | 200 OK. Latest row 11/5/2026, 30-yr 7.18% |
-| HCD 2026 State Income Limits (only for the runner-up idea) | https://www.hcd.ca.gov/sites/default/files/docs/grants-and-funding/income-limits-2026.pdf | 200 OK (PDF). Revised June 23, 2026 |
 
 ## Data and privacy
 
-- A2 rows contain `STREET_ADDRESS`, `PROJECT_NAME` and a free-text `NOTES` field. **Drop
-  `STREET_ADDRESS`, `PROJECT_NAME`, `NOTES`, `STD_ADDRESS`, `LATITUDE` and `LONGITUDE` in the
-  fetch script.** Free text could contain a person's name. The tool needs only city, year, unit
-  category, tenure, unit counts, dates, SB 35 flag, and APN or tracking ID for linking.
-- APNs are public parcel identifiers, not personal information, but nothing in the UI is needed at
-  parcel level. Show city-level aggregates only.
-- Be kind to data.ca.gov: fetch once, cache to CSV, commit the CSV. Page with `limit` and
-  `offset` and add a short sleep.
+- **Table A2: drop** `STREET_ADDRESS`, `STD_ADDRESS`, `PROJECT_NAME`, `NOTES`, `LATITUDE` and
+  `LONGITUDE` at fetch time. Keep city, year, unit category, tenure, unit counts, dates, the
+  SB 35 flag, and APN or tracking ID for linking.
+- **Table D:** keep program name, objective, target date and status. Program text describes city
+  programs, not people. If a row looks like it names a private person, stop and tell an
+  organizer.
+- Show city-level aggregates only, and no addresses in the UI.
+- Be kind to data.ca.gov: fetch once, cache the CSVs, commit them, page with `limit`/`offset`,
+  and sleep 1 second between pages.
 
 ## Open questions
 
-1. Is a same-day entitlement and permit (Anaheim, Fullerton) a ministerial path or a reporting
-   habit? Ask a planner in the room. Until then, show it as "same-day (reporting pattern?)".
-2. Should linking across report years use `JURS_TRACKING_ID` or `APN`? Test which gives more
-   matches in Irvine and Huntington Beach.
-3. Which `UNIT_CAT` values exist (ADU, SFD, 2 to 4, 5+, MH)? Confirm from the data before
-   building filters.
-4. Carrying cost per month: can someone in the room give a sourced figure? Until then, the
+1. Same-day entitlement and permit in Anaheim and Fullerton: is it a ministerial path or a
+   reporting habit? Ask a planner in the room.
+2. Linking across report years: `JURS_TRACKING_ID` or `APN`? Test which gives more matches in
+   Irvine and Huntington Beach.
+3. How many OC Table D programs are actually about permit speed? Measure it in step 1 of the
+   build. If it is under about 50, Tab B leans on peer benchmarks more than on promises.
+4. Carrying cost per month: can someone in the room give a sourced figure? Until then the
    synthetic-derived ASSUMPTION stays.
-5. Team: the brief template was left as a placeholder. This plan assumes solo. A teammate could
-   own the README, the video and the "where it's wrong" section.
+5. Team: this plan assumes solo. A teammate could own the README, the video and the classifier
+   hand-check.
 
 ## Ideas considered (scores 1–5: Impact / Works / Scale / Innovation / Portfolio)
 
 | # | Idea | Lane | I | W | S | In | Port |
 |---|---|---|---|---|---|---|---|
-| 1 | **Permit Clock**: city stage-duration benchmarks plus cost of delay | 2→3 | 4 | 5 | 5 | 4 | 5 |
-| 2 | Rate-to-Gap sensitivity (tornado / scenario) | 3 | 4 | 3 | 4 | 3 | 5 |
-| 3 | Stale-site detector: housing-element sites already permitted | 1 | 4 | 4 | 4 | 4 | 4 |
-| 4 | Site shortlist ranker with constraint flags | 1 | 5 | 2 | 4 | 3 | 4 |
-| 5 | Surplus-land notice cleaner and ranker | 1 | 3 | 4 | 3 | 2 | 3 |
-| 6 | City reporting-quality scorecard (fold into #1) | 2 | 3 | 5 | 5 | 3 | 4 |
+| A | **Schedule and contingency planner (Monte Carlo)**: picked, Tab A | 2→3 | 4 | 5 | 5 | 4 | 5 |
+| B | **City promise tracker (Table D plus peer benchmark)**: picked, Tab B | 2 | 4 | 4 | 5 | 4 | 4 |
+| C | Stalled-project radar (entitled 5+ projects that look stuck) | 2→1 | 4 | 2 | 4 | 5 | 4 |
+| 2 | Rate-to-Gap sensitivity | 3 | 4 | 3 | 4 | 3 | 5 |
+| 3 | Stale-site detector | 1 | 4 | 4 | 4 | 4 | 4 |
+| 4 | Site shortlist ranker | 1 | 5 | 2 | 4 | 3 | 4 |
+| 5 | Surplus-land cleaner | 1 | 3 | 4 | 3 | 2 | 3 |
 | 7 | Funding-round timing planner | 3 | 4 | 1 | 3 | 4 | 3 |
-| 8 | Stale-statute checker for city ADU checklists | 2 | 3 | 3 | 3 | 3 | 2 |
-
-Details are in the exploration chat. Short reasons for the top two are under "The decision".
+| 8 | Stale-statute checker | 2 | 3 | 3 | 3 | 3 | 2 |
 
 ## Portfolio framing (one line)
 
-*Business question:* how long does it really take to get a small housing project permitted and
-built in each Orange County city, and what does the difference cost? *Finding:* in the state's own
-reports, stage times differ by many months between cities, and several of the largest cities do
-not report the dates needed to measure them. *Recommendation:* nonprofits should pick sites with
-city timelines in hand and price the delay into the gap, and HCD and the cities should close the
-reporting gaps so the benchmark covers all 34.
+*Business question:* how long does a small housing project really take to permit and build in
+each Orange County city, what does the uncertainty cost, and are cities delivering on their own
+plans to speed it up? *Finding:* stage times differ by months between cities. Several large cities
+don't report the dates needed to measure them, and many permitting promises are past their target
+dates. *Recommendation:* nonprofits should budget P80, not P50, and choose cities with the data in
+hand. Advocates and city staff should use the city's own commitments to push the slowest stage
+first.
 
 ## Starter prompt for Claude Code (paste this in the terminal)
 
 ```
-Read CLAUDE.md and NOTES.md in this repo first. NOTES.md is the decision; follow it.
+Read CLAUDE.md and NOTES.md in this repo first. NOTES.md is the decision; follow it exactly.
+Build "Permit Clock", a Streamlit app with two tabs, solo, on main. Commit and push after
+each step and tell me when each step works.
 
-Build "Permit Clock", a Streamlit app, solo, on main, committing after each step.
+1. scripts/fetch_apr.py: page through the data.ca.gov CKAN datastore API (limit/offset,
+   sleep 1s between pages) and save:
+   - data/oc_apr_a2.csv from APR Table A2 (resource fe505d9b-8c36-42ba-ba30-08bc4f34e022),
+     CNTY_NAME = 'Orange'. Keep JURIS_NAME, YEAR, APN, JURS_TRACKING_ID, UNIT_CAT, TENURE,
+     ENT_APPROVE_DT1, BP_ISSUE_DT1, CO_ISSUE_DT1, NO_ENTITLEMENTS, NO_BUILDING_PERMITS,
+     NO_OTHER_FORMS_OF_READINESS, APPROVE_SB35 and the income-category unit counts.
+     DROP STREET_ADDRESS, STD_ADDRESS, PROJECT_NAME, NOTES, LATITUDE, LONGITUDE.
+   - data/oc_apr_tableD.csv from APR Table D (resource 37724925-2014-4646-ade8-3ba9f3ff9fb8),
+     filtering JURIS_NAME to the 34 OC cities plus ORANGE COUNTY (list the names in code; take
+     them from lanes/2-clear-it/data/oc-cities.json, uppercased).
+   - data/SOURCES.json with URLs, resource ids, pulled-at timestamp and row counts.
+   Print row counts by year (A2 should be about 54k for 2018-2025; D about 1.8k for 2025),
+   and print how many 2025 Table D rows match permit-related keywords (ADU, accessory, permit,
+   streamlin, pre-approved, objective design, fee, CUP).
+2. analysis.py (pure functions, with a small pytest file):
+   - Parse dates. Compute per-record entitlement->permit and permit->CO days from same-row
+     pairs. Then try linking across report years by (JURIS_NAME, JURS_TRACKING_ID), falling
+     back to APN; report how many links each method finds.
+   - Drop negative durations and count them. Flag 0-day entitlement->permit as "same-day".
+   - summary(city, unit_cat): n, P25/P50/P75/P80 in months, coverage %. Mark it "unknown" if
+     n < MIN_N (default 30, an ASSUMPTION).
+   - monte_carlo(city, unit_cat, start_date, monthly_cost, draws=5000, seed=42): resample
+     durations (jointly when a record has both stages, otherwise independently, labelled as an
+     assumption) and return P50/P80 dates, P50/P80 carrying cost, contingency = P80 - P50
+     cost, and each stage's share of the spread.
+3. app.py, Tab A "Plan my project": City A and City B, unit category, start date, carrying
+   cost (default $1,771/month, labelled "ASSUMPTION derived from the SYNTHETIC deal in
+   lanes/3-fund-it/data/synthetic-example-deal.json: $85k / 48 months; replace with yours").
+   Show a side-by-side P50/P80 table, a fan or bar chart, the contingency, and a one-line
+   action ("Budget $X contingency; City B is about N months faster at P80"). Show "unknown"
+   where n is too small. Add a Sources and caveats expander: the Anaheim/Fullerton same-day
+   pattern, the Huntington Beach 0-CO gap, the BackyardADU disagreement for City of Orange.
+   Footer: prototype, not legal or financial advice. Deploy to Streamlit Community Cloud
+   after this step.
+4. scripts/classify_tableD.py: keyword-filter the 2025 OC Table D rows, then send batches of
+   about 20 rows to claude-haiku-5-5 (key from .env via python-dotenv; never print it). Ask for
+   JSON per row: category (ADU streamlining | pre-approved plans | permit-time review |
+   objective standards | fees | process/CUP removal | other), status_bucket (completed |
+   ongoing | delayed | not started | unclear), target_date (ISO or null). Tell it to use
+   only the text given and answer "unclear" when the status does not say. Count tokens first
+   and print the estimated cost before running. Save data/tableD_classified.csv with the
+   source text kept, and write data/tableD_handcheck.csv with 20 random rows for me to
+   check.
+5. Tab B "City promise tracker": pick a city. Show its stage medians vs the OC best quartile;
+   its classified programs with source text, target date and an overdue flag (target date
+   before today and not completed); and the peer cities that completed the same category.
+   Add a "Draft a request" button that uses claude-haiku-5-5 to draft (never send) a short,
+   polite note quoting the city's own program text and date, cached, labelled "Draft: review
+   before use". Without an API key, show a static template.
+6. requirements.txt with pinned versions (from NOTES.md, then pip freeze), .env.example with
+   ANTHROPIC_API_KEY= only, and a README following templates/TEAM-README.md with Try it,
+   sources, real vs mocked, and where it's wrong.
 
-1. scripts/fetch_apr.py: page through the data.ca.gov CKAN datastore API for HCD APR
-   Table A2 (resource_id fe505d9b-8c36-42ba-ba30-08bc4f34e022), filter CNTY_NAME = 'Orange'
-   (field names: JURIS_NAME, YEAR, APN, JURS_TRACKING_ID, UNIT_CAT, TENURE, ENT_APPROVE_DT1,
-   BP_ISSUE_DT1, CO_ISSUE_DT1, NO_ENTITLEMENTS, NO_BUILDING_PERMITS, NO_OTHER_FORMS_OF_READINESS,
-   APPROVE_SB35, plus income-category unit counts). DROP STREET_ADDRESS, STD_ADDRESS,
-   PROJECT_NAME, NOTES, LATITUDE, LONGITUDE. Sleep 1s between pages. Save data/oc_apr_a2.csv and
-   data/SOURCE.json (URL, resource id, pulled-at timestamp, row count). Print the row count by
-   year; it should be roughly 54k total for 2018-2025.
-2. analysis.py (pure pandas, unit-testable): parse dates; compute per-record stage durations
-   (entitlement->permit, permit->CO) first from same-row pairs, then try linking across report
-   years by (JURIS_NAME, JURS_TRACKING_ID) and fall back to APN; drop negative durations and
-   count them; flag 0-day entitlement->permit as "same-day". Output a table by city x UNIT_CAT x
-   stage: n, median, P25, P75 in months, coverage % (rows with the needed dates / all rows).
-   Mark any cell with n < 30 as "unknown" (the 30 threshold is an ASSUMPTION; make it a
-   parameter).
-3. app.py (Streamlit): pick City A and City B, unit category, year range. Show a side-by-side
-   table and a bar chart with P25-P75 bars. Add a cost-of-delay panel: months difference x
-   carrying cost per month. The default of $1,771/month is ASSUMPTION derived from the SYNTHETIC
-   deal ($85k / 48 months) in lanes/3-fund-it/data/synthetic-example-deal.json; it must be
-   editable and labelled on screen. Add a "Sources and caveats" panel: dataset URL, date pulled,
-   row counts, the Anaheim/Fullerton same-day pattern, the Huntington Beach 0-CO gap, the
-   BackyardADU disagreement for City of Orange. Add a footer saying it is a prototype and not
-   legal or financial advice.
-4. Optional memo: if ANTHROPIC_API_KEY is set, call claude-haiku-5-5 with ONLY the small
-   comparison table and ask for a 3-4 sentence plain-language memo that uses only those numbers
-   and says "unknown" where a cell is unknown. Cache with st.cache_data. With no key, show
-   "memo unavailable". Label the memo "Drafted by Claude: check against the table".
-5. requirements.txt with pinned versions, .env.example (ANTHROPIC_API_KEY= only), and a README
-   following templates/TEAM-README.md, with a Try it section and a real-vs-mocked table.
-
-Never invent a number, fee, deadline or statute. Say "unknown". Get a runnable version first
-(steps 1-3), then improve. Tell me when each step works and commit it.
+Rules: never invent a number, fee, deadline or statute; say "unknown". Never say a program
+caused a change, or that a city violated a law. No addresses in the UI. Get steps 1-3
+running before anything else.
 ```

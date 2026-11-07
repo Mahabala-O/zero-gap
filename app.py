@@ -327,7 +327,9 @@ with tab_b:
     if gaps:
         slow = max(gaps, key=gaps.get)
         if gaps[slow] >= 0.25:
-            head.append(f"Slowest stage: **{slow}**, about **{months(gaps[slow])}** behind the "
+            # "Furthest behind", not "slowest": the largest gap to the benchmark need not be
+            # the stage that takes the longest in absolute months.
+            head.append(f"Furthest behind: **{slow}**, about **{months(gaps[slow])}** behind the "
                         "fastest quarter of OC cities.")
         else:
             head.append(f"{title(city)} is at or ahead of the fastest quarter of OC cities "

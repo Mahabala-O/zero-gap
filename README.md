@@ -20,7 +20,7 @@ The users below are made up, from `lanes/2-clear-it/scenarios.json`. They are no
 | | Before | After |
 |---|---|---|
 | **Nonprofit project manager** with a small project that could go in one of two OC cities | One rule of thumb (about 4 years, land to keys, from the brief) and phone calls | Likely (P50) and safe-to-plan (P80) move-in dates for City A vs City B, with sample size n, and a contingency in dollars to budget. "Unknown" where a city did not report enough |
-| **City permit tech, housing staff or advocate** | Housing-element programs are buried in annual-report text; nobody tracks which permitting promises are overdue | The city's slowest stage vs the fastest quarter of OC cities, its permitting programs sorted by type and status with overdue ones flagged, peers that finished the same kind of program, and a drafted (never sent) request quoting the city's own promise |
+| **City permit tech, housing staff or advocate** | Housing-element programs are buried in annual-report text; nobody tracks which permitting promises are overdue | The city's stage furthest behind the fastest quarter of OC cities, its permitting programs sorted by type and status with overdue ones flagged, peers that finished the same kind of program, and a drafted (never sent) request quoting the city's own promise |
 
 ## What we built
 
@@ -38,7 +38,7 @@ A Streamlit app with two tabs.
   mobile homes in Tustin and Santa Ana), the buffer chart is replaced by a one-line note instead
   of an empty plot. If carrying cost is set to $0/month, the headline says the $0 contingency
   comes only from that input and asks for the real monthly cost, rather than "Budget $0".
-- **City promise tracker.** Pick a city. For Tustin it says: "Slowest stage: Entitlement →
+- **City promise tracker.** Pick a city. For Tustin it says: "Furthest behind: Entitlement →
   permit, about 17 months behind the fastest quarter of OC cities. 29 permitting-related
   programs in its 2025 report; 14 are past their target date and not reported completed" (as of
   2026-11-07; the overdue count is checked against today's date). Where a target is not a single date,

@@ -305,3 +305,13 @@ def test_tab_a_zero_cost_does_not_say_budget_zero():
     text = " ".join(m.value for m in at.markdown)
     assert "Budget **$0**" not in text
     assert "carrying cost is set to $0/month" in text
+
+
+def test_tab_b_headline_says_furthest_behind_not_slowest():
+    # The headline picks the stage with the largest gap to the OC best quartile, which is not
+    # necessarily the stage that takes the longest; "Slowest stage" overstated that.
+    at = AppTest.from_file("app.py", default_timeout=120).run()
+    assert not at.exception
+    text = " ".join(m.value for m in at.markdown)
+    assert "Slowest stage" not in text
+    assert "Furthest behind: **" in text

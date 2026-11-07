@@ -307,3 +307,10 @@
 - Changed: README.md: one sentence added to the "Plan my project" bullet, matching the app text (app.py line 163).
 - Result: check.sh pass; docs only, tests unchanged (41). README statements missing app behaviour: 1 -> 0.
 - Next: (1) A person should fill data/tableD_handcheck.csv and put the accuracy in the README. (2) A person should confirm .env.example holds only ANTHROPIC_API_KEY=. (3) Make the repo public before 14:30.
+
+### Round 45 · 13:16 · Tab B headline says "Furthest behind", not "Slowest stage"
+- Category: C (wording overstated what the statistic shows)
+- Found: Tab B headline picked the stage with the largest gap to the OC best quartile and called it "Slowest stage". The largest gap is not necessarily the stage that takes the longest in absolute months, so the label claimed more than the number shows. New test `test_tab_b_headline_says_furthest_behind_not_slowest` fails on the old code.
+- Changed: app.py: headline now reads "Furthest behind: **<stage>**, about N months behind the fastest quarter of OC cities." README.md: Tab B quote and persona row updated to match. tests/test_app_headline.py: the new test.
+- Result: check.sh pass; tests 41 -> 42. Headlines using "Slowest stage" for a relative gap: 1 -> 0.
+- Next: (1) A person should fill data/tableD_handcheck.csv and put the accuracy in the README. (2) A person should confirm .env.example holds only ANTHROPIC_API_KEY=. (3) Make the repo public before 14:30.

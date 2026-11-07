@@ -4,6 +4,8 @@
 > will really take in a given city, what that delay costs, and which of the city's own
 > permitting promises are past their target date. Built on the state's own housing reports.
 
+[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://permit-clock.streamlit.app/)
+
 **Prototype only. Not legal, financial or lending advice.** Ask a professional before you decide.
 
 **Team:** seeeverything
@@ -54,7 +56,7 @@ A Streamlit app with two tabs.
   and the draft keep the full names.
 
 **Demo video:** uploaded with the submission form on the event hub
-**Live demo:** not hosted. It runs locally in about two minutes (see Try it)
+**Live demo:** https://permit-clock.streamlit.app/ (free hosting; if it has been idle it can take up to a minute to wake up). It also runs locally (see Try it)
 
 ## How Claude is used
 

@@ -104,6 +104,13 @@ def dollars(x) -> str:
     return U if x == U else f"${round(x, -2):,.0f}"
 
 
+def shown_contingency(r: dict):
+    """P80 minus P50 cost as shown on screen (each rounded to $100), so the row adds up."""
+    if r["contingency"] == U:
+        return U
+    return round(r["cost"]["P80"], -2) - round(r["cost"]["P50"], -2)
+
+
 def date(x) -> str:
     return U if x == U else pd.Timestamp(x).strftime("%b %Y")
 
@@ -145,7 +152,7 @@ with tab_a:
     ra, rb = res["A"], res["B"]
     parts = []
     if ra["contingency"] != U:
-        parts.append(f"Budget **{dollars(ra['contingency'])}** contingency in "
+        parts.append(f"Budget **{dollars(shown_contingency(ra))}** contingency in "
                      f"{title(city_a)} (P80 minus P50 carrying cost, ASSUMPTION cost/month).")
     else:
         parts.append(f"Contingency for {title(city_a)} is **unknown**: too few records.")
@@ -194,7 +201,7 @@ with tab_a:
         col["Move-in (CO) date, P50 / P80"] = (
             f"{date(r['co_date']['P50'])} / {date(r['co_date']['P80'])}")
         col["Carrying cost, P50 / P80"] = f"{dollars(r['cost']['P50'])} / {dollars(r['cost']['P80'])}"
-        col["Contingency (P80 − P50)"] = dollars(r["contingency"])
+        col["Contingency (P80 − P50)"] = dollars(shown_contingency(r))
         col["Method"] = ("stages drawn together" if r["method"] == "paired"
                          else "stages drawn separately (ASSUMPTION)")
         rows[f"{title(city)} ({k})"] = col

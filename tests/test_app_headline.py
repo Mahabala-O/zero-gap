@@ -105,3 +105,19 @@ def test_tab_b_gap_matches_shown_values():
             assert num(gap) == num(row[[c for c in t.columns if "median" in c][0]]) - num(row["OC best quartile (n)"])
             checked += 1
     assert checked >= 1
+
+
+def test_tab_a_contingency_matches_shown_costs():
+    # Default view: Santa Ana's unrounded contingency rounds to $16,800, but the shown costs are
+    # $16,300 / $33,000. The contingency shown must be the difference of the shown costs.
+    at = AppTest.from_file("app.py", default_timeout=120).run()
+    assert not at.exception
+    table = at.dataframe[0].value
+    money = lambda s: int(s.replace("$", "").replace(",", ""))
+    for col in table.columns:
+        cost = table.loc["Carrying cost, P50 / P80", col]
+        cont = table.loc["Contingency (P80 − P50)", col]
+        if "unknown" in cost or cont == "unknown":
+            continue
+        p50, p80 = (money(x) for x in cost.split(" / "))
+        assert money(cont) == p80 - p50, (col, cost, cont)

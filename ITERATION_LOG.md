@@ -181,3 +181,10 @@
 - Changed: app.py: Tab B gap = shown (half-month) median − shown best quartile; the headline "slowest stage" uses the same gap. tests/test_app_headline.py: new AppTest `test_tab_b_gap_matches_shown_values` (fails on the old code: 2.5 != 9 − 6).
 - Result: check.sh pass; tests 27 -> 28. Tustin Permit → CO gap: 2.5 -> 3 months; Entitlement → permit unchanged (17).
 - Next: (1) The peer list's category labels mix case ("ADU streamlining" vs "fees"). (2) A person should fill data/tableD_handcheck.csv. (3) Check Tab A's numbers add up the same way (P80 − P50 contingency vs shown months).
+
+### Round 27 · 12:43 · Tab A contingency equals the difference of the costs shown beside it
+- Category: C (statistic shown inconsistently; Round 26 queue item 3)
+- Found: a scan of all 15 cities with a known contingency (All types) found 2 whose shown contingency did not equal shown P80 − shown P50: Santa Ana (default City B) showed "$16,300 / $33,000" with contingency "$16,800"; Orange showed $3,100 vs a $3,000 difference. Cause: the contingency was rounded from unrounded costs.
+- Changed: app.py: new `shown_contingency()` = round(P80, -2) − round(P50, -2); used in the headline and the table. tests/test_app_headline.py: new AppTest `test_tab_a_contingency_matches_shown_costs` (fails on the old code: 16800 != 33000 − 16300).
+- Result: check.sh pass; tests 28 -> 29. Cities whose contingency row does not add up: 2/15 -> 0/15. Santa Ana contingency: $16,800 -> $16,700.
+- Next: (1) The peer list's category labels mix case ("ADU streamlining" vs "fees"). (2) A person should fill data/tableD_handcheck.csv. (3) Check the Tab A chart (P80 − P50 buffer per stage) uses the same shown values as the table.

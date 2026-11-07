@@ -322,12 +322,14 @@ with tab_b:
         head.append("How this city compares on stage times is **unknown** (too few records "
                     "or same-day reporting).")
     n_unk = int((prog["overdue"] == "unknown").sum())
-    head.append(f"**{n_prog}** permitting-related programs in its 2025 report; "
-                f"**{n_over}** {'is' if n_over == 1 else 'are'} past their target date and "
-                "not reported completed"
-                # Without this, a city whose targets are all non-dates reads as "0 overdue".
-                + (f"; for **{n_unk}**, whether they are overdue is **unknown** (the target "
-                   "is not a single date)." if n_unk else "."))
+    # With no programs, the info box below says so; "0 are past their target date" adds nothing.
+    if n_prog:
+        head.append(f"**{n_prog}** permitting-related programs in its 2025 report; "
+                    f"**{n_over}** {'is' if n_over == 1 else 'are'} past their target date and "
+                    "not reported completed"
+                    # Without this, a city whose targets are all non-dates reads as "0 overdue".
+                    + (f"; for **{n_unk}**, whether they are overdue is **unknown** (the target "
+                       "is not a single date)." if n_unk else "."))
     st.markdown(" ".join(head))
     # st.table wraps text, so the benchmark column stays on screen at phone width
     # (st.dataframe scrolled it off the right edge at 390 px).

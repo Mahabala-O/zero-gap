@@ -237,3 +237,10 @@
 - Changed: app.py: the headline adds "for **N**, whether they are overdue is **unknown** (the target is not a single date)" when N > 0, and says "1 is". tests/test_app_headline.py: new `test_tab_b_headline_counts_unknown_overdue` (Costa Mesa shows the clause; Tustin, with none unknown, does not).
 - Result: check.sh pass; tests 34 -> 35. Cities whose headline hid unknown-overdue programs: 6 -> 0.
 - Next: (1) A person should fill data/tableD_handcheck.csv. (2) Laguna Niguel (0 programs) shows both "0 programs; 0 are past…" and an info box; drop the redundant count. (3) Tab B phone: consider dropping the "City's own status text" column if the tests allow.
+
+### Round 35 · 12:59 · Tab B: city with no programs no longer shows a "0 are past their target date" line
+- Category: C (Round 34 queue item 2)
+- Found: Laguna Niguel (0 permitting-related 2025 programs in the Table D extract) showed "**0** permitting-related programs…; **0** are past their target date…" next to the info box "No permitting-related programs found". The "0 past due" line reads as a clean record when there is nothing to judge.
+- Changed: app.py: the program-count sentence shows only when the city has at least 1 program (the info box covers 0). tests/test_app_headline.py: new `test_tab_b_city_with_no_programs_has_no_zero_count_headline` (fails on old code, passes now).
+- Result: check.sh pass; tests 35 -> 36. Cities with a "0 past due" line and no programs: 1 -> 0.
+- Next: (1) A person should fill data/tableD_handcheck.csv and put the accuracy in the README. (2) Tab B phone: consider dropping the "City's own status text" column if the tests allow. (3) Re-screenshot Tab B at 390 px.

@@ -216,3 +216,17 @@ def test_tab_b_headline_counts_unknown_overdue():
     # Tustin has no unknown targets: no unknown clause there.
     at.selectbox(key="city_b_tab").select("TUSTIN").run()
     assert "whether they are overdue is" not in " ".join(m.value for m in at.markdown)
+
+
+def test_tab_b_city_with_no_programs_has_no_zero_count_headline():
+    # Laguna Niguel has no permitting-related 2025 programs: the info box says so, and the
+    # headline must not also claim "0 ... are past their target date".
+    import analysis as A
+    p = A.load_programs()
+    assert (p["JURIS_NAME"] == "LAGUNA NIGUEL").sum() == 0
+    at = AppTest.from_file("app.py", default_timeout=120).run()
+    at.selectbox(key="city_b_tab").select("LAGUNA NIGUEL").run()
+    assert not at.exception
+    text = " ".join(m.value for m in at.markdown)
+    assert "past their target date" not in text
+    assert any("No permitting-related programs found" in i.value for i in at.info)

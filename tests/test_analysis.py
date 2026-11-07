@@ -150,3 +150,19 @@ def test_program_labels_drop_words_every_name_in_a_city_shares():
                                            "PROGRAM_NAME": ["Fees", "Fees x", "Fees y"],
                                            "PROGRAM_OBJECTIVE": ["a", "b", "c"]}))
     assert same.tolist()[0].startswith("Fees")
+
+
+def test_program_labels_start_after_a_repeated_shared_lead():
+    # Tustin-style: a goal heading, then the shared lead again, then the program line.
+    prog = pd.DataFrame({
+        "JURIS_NAME": ["A"] * 3,
+        "PROGRAM_NAME": ["6th HE Cycle  Goal 1: Supply \n6th HE Cycle  1.1 (New) Sites",
+                         "6th HE Cycle 1.5 Zoning", "6th HE Cycle 1.7 ADU"],
+        "PROGRAM_OBJECTIVE": ["a", "b", "c"],
+    })
+    assert an.program_labels(prog).tolist() == ["1.1 (New) Sites", "1.5 Zoning", "1.7 ADU"]
+    # A repeat with nothing after it leaves the name as it was.
+    end = pd.DataFrame({"JURIS_NAME": ["A"] * 3,
+                        "PROGRAM_NAME": ["Lead x Lead", "Lead y", "Lead z"],
+                        "PROGRAM_OBJECTIVE": ["a", "b", "c"]})
+    assert an.program_labels(end).tolist()[0] == "x Lead"

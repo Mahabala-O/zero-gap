@@ -36,7 +36,8 @@ A Streamlit app with two tabs.
   programs in its 2025 report; 14 are past their target date and not reported completed." Every
   program label sits next to the city's own status text. Program names on screen are the city's
   own words, shortened: leading words that every name in a city shares (e.g. Tustin's "6th HE
-  Cycle") are left out, and same-looking names add the start of their own objective. The data
+  Cycle") are left out; if that lead appears again inside a name (a heading such as "Goal 1: …"
+  came first), the label starts after it; same-looking names add the start of their own objective. The data
   and the draft keep the full names.
 
 **Demo video:** [to add]

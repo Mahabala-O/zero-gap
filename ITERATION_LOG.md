@@ -167,3 +167,10 @@
 - Changed: analysis.py: `summary()` sets same_day_pct to "unknown" when n < min_n (docstring says so). tests/test_analysis.py: asserts same_day_pct is a number at n = 40 and "unknown" with min_n = 50. tests/test_app_headline.py: new AppTest (Yorba Linda, MH): no "Caution: most of". README.md: the same-day bullet says the caution needs at least 30 records.
 - Result: check.sh pass; tests 25 -> 26. Same-day cautions drawn from n < 30: possible -> none. Anaheim/Fullerton all-types cautions unchanged (existing tests pass).
 - Next: (1) Some Tustin labels start "Goal 1: Adequate Housing Supply 6th HE Cycle…" and fill the Program column with the same words. (2) Check other on-screen percentages (coverage_pct) for n < MIN_N. (3) A person should fill data/tableD_handcheck.csv.
+
+### Round 25 · 12:39 · Tab B labels start at the program line, not the goal heading
+- Category: D
+- Found: Round 23/24 queue: 4 of 29 Tustin labels began "Goal 1: Adequate Housing Supply 6th HE C…" (raw names put a goal heading, then repeat "6th HE Cycle" before the program line), so the Program column showed the same heading words and cut off the program number.
+- Changed: analysis.py: `_drop_shared_lead()` labels from after the last repeat of the city's shared lead when words follow it (on-screen label only; data and draft keep full names). tests/test_analysis.py: new test (heading skipped; a trailing repeat with nothing after it leaves the name as is). README.md: label bullet says so.
+- Result: check.sh pass; tests 26 -> 27. Tustin labels starting "Goal": 4 -> 0; labels still unique 29/29; no empty labels across all 367 rows.
+- Next: (1) Re-screenshot Tab B (Tustin, 1280 px) to confirm the labels read well. (2) The peer list's category labels mix case ("ADU streamlining" vs "fees"). (3) A person should fill data/tableD_handcheck.csv.

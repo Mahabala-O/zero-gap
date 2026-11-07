@@ -221,7 +221,17 @@ def _drop_shared_lead(names: pd.Series, min_rows: int = 3) -> pd.Series:
     k = 0
     while all(len(w) > k + 1 and w[k] == words[0][k] for w in words):
         k += 1
-    return names if k == 0 else pd.Series([" ".join(w[k:]) for w in words], index=names.index)
+    if k == 0:
+        return names
+    lead = " ".join(words[0][:k]) + " "
+    out = []
+    for w in words:
+        rest = " ".join(w[k:])
+        # The lead repeated later means the city put a heading first (e.g. "Goal 1: …") and
+        # the program line starts after the last repeat; label from there if words remain.
+        i = rest.rfind(lead)
+        out.append(rest[i + len(lead):] if i >= 0 and rest[i + len(lead):].strip() else rest)
+    return pd.Series(out, index=names.index)
 
 
 def program_labels(prog: pd.DataFrame, name_len: int = 60, obj_len: int = 60) -> pd.Series:
@@ -229,7 +239,8 @@ def program_labels(prog: pd.DataFrame, name_len: int = 60, obj_len: int = 60) ->
 
     Whitespace is collapsed. Leading words that every one of a city's names shares (when it
     has at least 3 programs, e.g. Tustin's "6th HE Cycle") are left out, so the label budget
-    goes to the words that differ. When two of a city's names look the same once shortened,
+    goes to the words that differ. If that shared lead appears again inside a name (a heading
+    such as "Goal 1: …" came first), the label starts after its last repeat. When two of a city's names look the same once shortened,
     the label adds the start of that row's own PROGRAM_OBJECTIVE (and, if still the same,
     shows the end of the name), so rows stay distinct.
     """

@@ -6,8 +6,8 @@
 
 **Prototype only. Not legal, financial or lending advice.** Ask a professional before you decide.
 
-**Team:** [team name: to fill]
-**Members:** [names: to fill]
+**Team:** Zero Gap
+**Members:** Mikhail Orlov
 **Lane:** 2 Clear it (with a bridge to Lane 3: time becomes gap dollars)
 **Built at:** Claude Impact Lab: UCI × SoCal Affordable Housing, November 7, 2026
 
@@ -53,8 +53,8 @@ A Streamlit app with two tabs.
   came first), the label starts after it; same-looking names add the start of their own objective. The data
   and the draft keep the full names.
 
-**Demo video:** [to add]
-**Live demo:** [to add, e.g. Streamlit Community Cloud]
+**Demo video:** uploaded with the submission form on the event hub
+**Live demo:** not hosted. It runs locally in about two minutes (see Try it)
 
 ## How Claude is used
 
@@ -75,7 +75,7 @@ A Streamlit app with two tabs.
 ## Try it
 
 ```bash
-git clone <this repo>
+git clone https://github.com/Mahabala-O/zero-gap
 cd zero-gap
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt

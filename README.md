@@ -36,7 +36,8 @@ A Streamlit app with two tabs.
   the table. If City A and City B are the same city, the headline says so and asks for a
   different City B. If every stage is "unknown" for both cities at the chosen unit type (e.g.
   mobile homes in Tustin and Santa Ana), the buffer chart is replaced by a one-line note instead
-  of an empty plot.
+  of an empty plot. If carrying cost is set to $0/month, the headline says the $0 contingency
+  comes only from that input and asks for the real monthly cost, rather than "Budget $0".
 - **City promise tracker.** Pick a city. For Tustin it says: "Slowest stage: Entitlement →
   permit, about 17 months behind the fastest quarter of OC cities. 29 permitting-related
   programs in its 2025 report; 14 are past their target date and not reported completed" (as of

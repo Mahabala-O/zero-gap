@@ -300,3 +300,10 @@
 - Changed: app.py: when cost is 0 the headline says "Contingency is $0 only because carrying cost is set to $0/month: enter your monthly cost to price the delay." tests/test_app_headline.py: the new test.
 - Result: check.sh pass; tests 40 -> 41. Misleading "$0 contingency" headlines at cost 0: 1 -> 0.
 - Next: (1) A person should fill data/tableD_handcheck.csv and put the accuracy in the README. (2) A person should confirm .env.example holds only ANTHROPIC_API_KEY=. (3) Make the repo public before 14:30.
+
+### Round 44 · 13:14 · README describes Tab A's $0 carrying-cost headline
+- Category: F (Round 43 change not yet in docs)
+- Found: README "Plan my project" bullet did not mention Round 43's behaviour: at carrying cost $0/month the headline explains the $0 contingency instead of saying "Budget $0".
+- Changed: README.md: one sentence added to the "Plan my project" bullet, matching the app text (app.py line 163).
+- Result: check.sh pass; docs only, tests unchanged (41). README statements missing app behaviour: 1 -> 0.
+- Next: (1) A person should fill data/tableD_handcheck.csv and put the accuracy in the README. (2) A person should confirm .env.example holds only ANTHROPIC_API_KEY=. (3) Make the repo public before 14:30.

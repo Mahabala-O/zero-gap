@@ -108,11 +108,13 @@ Every number we made up is labelled ASSUMPTION here and in the tool.
   very few entitlement dates, Costa Mesa few, and Huntington Beach reports no completion dates,
   so those cells show "unknown".
 - **Same-day cities** (Anaheim, Fullerton) look fast from entitlement to permit because of how
-  they report. The app flags them; do not read them as fastest.
+  they report. When a picked city has 50% or more same-day entitlement → permit records
+  (ASSUMPTION threshold), the Tab A headline adds a caution; do not read those cities as fastest.
 - **Thin cells.** Affordable-only projects are too few for benchmarks, so the app uses all
   projects of a unit type. Many city × unit-type cells are "unknown".
 - **Separate draws.** Where few records hold both stages (Santa Ana: 6 for all types), the
-  forecast assumes the stages are independent. Treat those results as rough.
+  forecast assumes the stages are independent. The Tab A headline says so whenever a picked
+  city has fewer than 30 (MIN_N) records with both stages. Treat those results as rough.
 - **Program labels** come from Claude reading short status text. Accuracy is unknown until the
   hand-check is done. A keyword fallback exists but agreed with Claude on only 47% of
   categories, so it is weak.

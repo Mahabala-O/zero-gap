@@ -104,3 +104,10 @@
 - Changed: app.py: Tab B medians caption now starts "CO = certificate of occupancy, the sign-off that people can move in." (same wording as Tab A's help text). tests/test_app_headline.py: AppTest checks the caption carries the definition.
 - Result: check.sh pass; tests 20 -> 21. UX rubric 12/13 -> 13/13 on scored items (#10 timing still not measured).
 - Next: (1) Time a re-render after an input change (rubric #10). (2) Tab B program table: Program column cuts off the objective snippet at 1280 px. (3) README: mention the headline flags (separate draws, same-day caution) in "where it's wrong".
+
+### Round 16 · 12:21 · README states when the Tab A headline flags appear; re-render timed
+- Category: F (after an E/D check found nothing to fix)
+- Found: (1) Rubric #10 timed with AppTest: first run 1.44 s; changing City A 0.17–0.24 s, unit type 0.38 s, so #10 passes and needs no change. (2) README "Where it gets things wrong" said the app "flags" same-day cities and mentioned separate draws, but not when or where: the Tab A headline cautions at ≥ 50% same-day records (SAME_DAY_FLAG_PCT, ASSUMPTION) and flags separate draws below MIN_N = 30 paired records.
+- Changed: README.md: the two bullets now give the trigger, the threshold (labelled ASSUMPTION) and that the warning is in the Tab A headline.
+- Result: check.sh pass; 21 tests. UX rubric 13/13 (#10 now measured: < 0.4 s per input change).
+- Next: (1) Tab B program table: Program column cuts off the objective snippet at 1280 px. (2) A person should fill data/tableD_handcheck.csv. (3) Phone-width check of Tab B draft section.

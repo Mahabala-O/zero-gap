@@ -49,6 +49,16 @@ def stage_summary(city: str, unit_cat, stage: str) -> dict:
     return A.summary(data(), city, unit_cat, stage)
 
 
+@st.cache_data
+def best_q(stage: str):
+    return A.best_quartile(A.peer_medians(data(), None, stage))
+
+
+@st.cache_data
+def programs() -> pd.DataFrame:
+    return A.add_overdue(A.load_programs(), dt.date.today())
+
+
 def months(x) -> str:
     if x == U:
         return U
@@ -196,6 +206,93 @@ with tab_a:
                    "explain why a city is faster or slower.")
 
 with tab_b:
-    st.info("City promise tracker: not built yet (build step 5).")
+    prog_all = programs()
+    b_cities = sorted(set(prog_all["JURIS_NAME"]) | set(cities))
+    city = st.selectbox("City", b_cities, index=b_cities.index("TUSTIN"), format_func=title,
+                        key="city_b_tab")
+    prog = prog_all[prog_all["JURIS_NAME"] == city]
+
+    # Stage medians vs the OC best quartile (all unit types).
+    stage_rows, gaps = [], {}
+    for s, label in STAGE_LABELS.items():
+        sm = stage_summary(city, None, s)
+        bq = best_q(s)
+        if sm["P50"] == U:
+            note = f"unknown (n={sm['n']}, below {A.MIN_N})"
+        elif sm["P50"] == 0:
+            note = "same-day (reporting pattern? INFERRED)"
+        elif bq == U:
+            note = U
+        else:
+            gaps[label] = sm["P50"] - bq
+            note = (f"{months(gaps[label])} behind" if gaps[label] >= 0.25
+                    else "at or ahead")
+        stage_rows.append({"Stage": label,
+                           f"{title(city)} median (n)": f"{months(sm['P50'])} (n={sm['n']})",
+                           "OC best quartile": months(bq), "Gap": note})
+
+    n_prog = len(prog)
+    n_over = int((prog["overdue"] == "yes").sum())
+    head = []
+    if gaps:
+        slow = max(gaps, key=gaps.get)
+        if gaps[slow] >= 0.25:
+            head.append(f"Slowest stage: **{slow}**, about **{months(gaps[slow])}** behind the "
+                        "fastest quarter of OC cities.")
+        else:
+            head.append(f"{title(city)} is at or ahead of the fastest quarter of OC cities "
+                        "on the stages it reports.")
+    else:
+        head.append("How this city compares on stage times is **unknown** (too few records "
+                    "or same-day reporting).")
+    head.append(f"**{n_prog}** permitting-related programs in its 2025 report; "
+                f"**{n_over}** are past their target date and not reported completed.")
+    st.markdown(" ".join(head))
+    st.dataframe(pd.DataFrame(stage_rows).set_index("Stage"), use_container_width=True)
+    st.caption("Medians use all unit types and same-row date pairs. Best quartile = 25th "
+               f"percentile of city medians among cities with n ≥ {A.MIN_N}, leaving out "
+               "same-day (median 0) cities (ASSUMPTION: reporting pattern, not speed).")
+
+    if n_prog:
+        method = prog["method"].iloc[0]
+        st.caption("Labels: " + ("Claude Haiku (claude-haiku-5-5), read from the city's own "
+                                 "text; not yet hand-checked." if method.startswith("claude")
+                                 else "keyword match, not reviewed."))
+        show = prog.sort_values(["overdue", "target_date"], ascending=[False, True])
+        st.dataframe(pd.DataFrame({
+            "Overdue": show["overdue"],
+            "Program": show["PROGRAM_NAME"],
+            "Category": show["category"],
+            "Status": show["status_bucket"],
+            "Target date": show["target_date"].fillna(U),
+            "City's own status text": show["PROGRAM_STATUS"],
+        }), use_container_width=True, hide_index=True)
+        open_cats = sorted(set(prog.loc[prog["status_bucket"] != "completed", "category"])
+                           - {"other"})
+        lines = []
+        for c in open_cats:
+            peers = A.peers_completed(prog_all, city, c)
+            lines.append(f"- **{c}:** " + (", ".join(title(p) for p in peers) if peers
+                                            else "none reported completed"))
+        if lines:
+            st.markdown("**Peers that report completing the same kind of program** "
+                        "(where this city's is not completed):\n" + "\n".join(lines))
+    else:
+        st.info(f"No permitting-related programs found for {title(city)} in the 2025 Table D "
+                "extract. Try another city.")
+
+    with st.expander("Sources and caveats"):
+        src = sources()
+        td = src["tables"]["oc_apr_tableD.csv"]
+        st.markdown(
+            f"- **Programs:** {td['name']}, {src['publisher']}. Resource `{td['resource_id']}`, "
+            f"2025 report year, keyword-filtered to permitting topics, pulled "
+            f"{src['pulled_at_utc'][:10]}. [API link]({td['url']})\n"
+            "- **Overdue** = target date before today and status not \"completed\". "
+            "\"unknown\" when the target is not a single date. Status labels can be wrong: "
+            "read the city's own text beside each row.\n"
+            "- **Stage times:** APR Table A2 (see the Plan my project tab).")
+        st.caption("Association, not cause: a program's status does not show it caused a "
+                   "city to be faster or slower. Nothing here says a city broke a law.")
 
 st.caption("Prototype. Not legal, financial or lending advice. Check decisions with a professional.")

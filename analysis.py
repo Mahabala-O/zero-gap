@@ -159,6 +159,54 @@ def monte_carlo(df: pd.DataFrame, city: str, unit_cat: str | None, start_date,
     return res
 
 
+def peer_medians(df: pd.DataFrame, unit_cat: str | None, stage: str,
+                 min_n: int = MIN_N) -> pd.DataFrame:
+    """Median months per city for one stage, cities with n >= min_n only.
+
+    Columns: JURIS_NAME, n, P50, same_day (True when the median is 0 days, the reporting
+    pattern seen in Anaheim/Fullerton; INFERRED, not confirmed).
+    """
+    sub = df if unit_cat is None else df[df["UNIT_CAT"] == unit_cat]
+    g = sub.dropna(subset=[stage + "_days"]).groupby("JURIS_NAME")[stage + "_days"]
+    out = pd.DataFrame({"n": g.size(), "P50": g.median() / DAYS_PER_MONTH}).reset_index()
+    out = out[out["n"] >= min_n].reset_index(drop=True)
+    out["same_day"] = out["P50"] == 0
+    return out
+
+
+def best_quartile(peers: pd.DataFrame) -> float | str:
+    """25th percentile of city medians, leaving out same-day (median 0) cities.
+
+    ASSUMPTION: same-day medians look like a reporting pattern, not speed, so they are
+    excluded from the benchmark. Needs at least 4 cities, else "unknown".
+    """
+    vals = peers.loc[~peers["same_day"], "P50"].to_numpy(dtype=float)
+    return float(np.percentile(vals, 25)) if len(vals) >= 4 else UNKNOWN
+
+
+def load_programs(path: Path | str = DATA_DIR / "tableD_classified.csv") -> pd.DataFrame:
+    return pd.read_csv(path, dtype=str)
+
+
+def add_overdue(prog: pd.DataFrame, today) -> pd.DataFrame:
+    """overdue = "yes" if target_date < today and status not completed; "no" if completed or
+    the target is today or later; "unknown" when there is no parsed target date."""
+    out = prog.copy()
+    t = pd.to_datetime(out["target_date"], errors="coerce")
+    done = out["status_bucket"] == "completed"
+    past = t < pd.Timestamp(today)
+    out["overdue"] = np.where(done, "no", np.where(t.isna(), UNKNOWN,
+                                                   np.where(past, "yes", "no")))
+    return out
+
+
+def peers_completed(prog: pd.DataFrame, city: str, category: str) -> list[str]:
+    """Other jurisdictions that report a completed program in the same category."""
+    m = ((prog["category"] == category) & (prog["status_bucket"] == "completed")
+         & (prog["JURIS_NAME"].str.upper() != city.upper()))
+    return sorted(prog.loc[m, "JURIS_NAME"].unique())
+
+
 if __name__ == "__main__":
     d = add_durations(load_a2())
     print("negative durations dropped:", count_negatives(d))

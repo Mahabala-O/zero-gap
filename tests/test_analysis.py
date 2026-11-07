@@ -79,3 +79,31 @@ def test_monte_carlo_unknown_when_stage_missing_or_no_data():
     assert r["co_date"]["P50"] == "unknown" and r["contingency"] == "unknown"
     empty = an.monte_carlo(_mc_df(rows), "NOWHERE", "ADU", "2026-01-01", 1000.0)
     assert empty["permit_date"]["P80"] == "unknown" and empty["cost"]["P50"] == "unknown"
+
+
+def test_peer_medians_and_best_quartile_excludes_same_day():
+    rows = []
+    for c, gap in (("A", 0), ("B", 10), ("C", 20), ("D", 30), ("E", 40), ("F", 5)):
+        n = 30 if c != "F" else 10  # F below MIN_N -> left out
+        rows += [[c, "2023", f"{c}{i}", f"{c}{i}", "ADU", "2023-01-01",
+                  (pd.Timestamp("2023-01-01") + pd.Timedelta(days=gap)).strftime("%Y-%m-%d"),
+                  None] for i in range(n)]
+    d = an.add_durations(_df(rows))
+    p = an.peer_medians(d, "ADU", "ent_to_permit")
+    assert sorted(p["JURIS_NAME"]) == ["A", "B", "C", "D", "E"]
+    assert p.set_index("JURIS_NAME").loc["A", "same_day"]
+    # same-day A excluded -> 25th pct of [10, 20, 30, 40] days = 17.5 days
+    assert abs(an.best_quartile(p) - 17.5 / an.DAYS_PER_MONTH) < 1e-9
+    assert an.best_quartile(p[p["JURIS_NAME"].isin(["A", "B", "C"])]) == an.UNKNOWN
+
+
+def test_overdue_and_peers_completed():
+    prog = pd.DataFrame({
+        "JURIS_NAME": ["X", "X", "X", "Y", "Z", "Z"],
+        "category": ["fees", "fees", "fees", "fees", "fees", "other"],
+        "status_bucket": ["ongoing", "completed", "delayed", "completed", "completed", "completed"],
+        "target_date": ["2024-01-01", "2024-01-01", None, "2030-01-01", "2020-01-01", None],
+    })
+    o = an.add_overdue(prog, "2026-11-07")
+    assert o["overdue"].tolist() == ["yes", "no", an.UNKNOWN, "no", "no", "no"]
+    assert an.peers_completed(prog, "x", "fees") == ["Y", "Z"]

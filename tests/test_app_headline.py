@@ -107,12 +107,24 @@ def test_tab_b_gap_matches_shown_values():
     assert checked >= 1
 
 
+def tab_a_table(at):
+    return [t.value for t in at.table if "Method" in t.value.index][0]
+
+
+def test_tab_a_table_wraps_at_phone_width():
+    # At 390 px st.dataframe scrolled City B's column off the right edge; st.table wraps.
+    at = AppTest.from_file("app.py", default_timeout=120).run()
+    assert not at.exception
+    assert not [d for d in at.dataframe if "Method" in d.value.index]
+    assert len(tab_a_table(at).columns) == 2
+
+
 def test_tab_a_contingency_matches_shown_costs():
     # Default view: Santa Ana's unrounded contingency rounds to $16,800, but the shown costs are
     # $16,300 / $33,000. The contingency shown must be the difference of the shown costs.
     at = AppTest.from_file("app.py", default_timeout=120).run()
     assert not at.exception
-    table = at.dataframe[0].value
+    table = tab_a_table(at)
     money = lambda s: int(s.replace("$", "").replace(",", ""))
     for col in table.columns:
         cost = table.loc["Carrying cost, P50 / P80", col]
@@ -129,7 +141,7 @@ def test_tab_a_chart_buffer_matches_shown_months():
     import json
     at = AppTest.from_file("app.py", default_timeout=120).run()
     assert not at.exception
-    table = at.dataframe[0].value
+    table = tab_a_table(at)
     spec = json.loads(at.get("plotly_chart")[0].proto.spec)
     num = lambda s: float(s.split(" month")[0])
     for trace in spec["data"]:

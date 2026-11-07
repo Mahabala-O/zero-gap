@@ -209,3 +209,10 @@
 - Changed: README.md: one sentence in the "Plan my project" bullet.
 - Result: check.sh pass; docs only, tests unchanged (31). README statements that disagree with the app: 1 -> 0.
 - Next: (1) A person should fill data/tableD_handcheck.csv and put the accuracy in the README. (2) Re-screenshot both tabs at 390 px to re-score the rubric after rounds 25-29. (3) README "real vs mocked" table: confirm rows still match.
+
+### Round 31 · 12:51 · Tab A table wraps at phone width so both cities are on screen
+- Category: D (rubric #8, phone works). Queue item 3 checked first: README "real vs mocked" rows still match the app (BackyardADU figure shown, cross-year links counted only), so nothing to change there.
+- Found: screenshot.py → .ux/tab1-phone-full.png (390 px): the Tab A results table (st.dataframe) cut off at "20 month…", and Santa Ana's (City B) column was hidden behind a sideways scroll. UX score 12/13 (only #8 failed).
+- Changed: app.py: the Tab A table uses st.table, which wraps text (same fix as Tab B in Round 18). tests/test_app_headline.py: new `test_tab_a_table_wraps_at_phone_width` (fails on old code). The contingency and chart tests read the same table through a `tab_a_table()` helper, with the same assertions.
+- Result: check.sh pass; tests 31 -> 32. City columns fully visible at 390 px: 1/2 -> 2/2. UX 12/13 -> 13/13.
+- Next: (1) Tab A chart title "Which stage adds the most buffer (P80 − P50)" is cut off at 390 px; shorten it or let it wrap. (2) A person should fill data/tableD_handcheck.csv. (3) Re-check Tab B phone screenshot.

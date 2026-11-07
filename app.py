@@ -210,7 +210,9 @@ with tab_a:
         col["Method"] = ("stages drawn together" if r["method"] == "paired"
                          else "stages drawn separately (ASSUMPTION)")
         rows[f"{title(city)} ({k})"] = col
-    st.dataframe(pd.DataFrame(rows), use_container_width=True)
+    # st.table wraps text, so City B's column stays on screen at phone width
+    # (st.dataframe scrolled it off the right edge at 390 px).
+    st.table(pd.DataFrame(rows))
     st.caption("Move-in dates come from whole simulated projects, so the P80 date is usually "
                "earlier than adding the two stage P80s: few projects are slow at both stages.")
 

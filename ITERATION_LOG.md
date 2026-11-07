@@ -265,3 +265,10 @@
 - Changed: app.py: the chart and its title show only if at least one bar exists; otherwise a caption says "No buffer chart: every stage is unknown for both cities at this unit type." tests/test_app_headline.py: new `test_tab_a_chart_hidden_when_no_bars` (fails on old code: 1 chart != 0; passes now; ADU still shows the chart).
 - Result: check.sh pass; tests 37 -> 38. Default-city unit types with an empty chart: 2 -> 0.
 - Next: (1) A person should fill data/tableD_handcheck.csv and put the accuracy in the README. (2) Re-screenshot Tab B at 390 px. (3) README: mention the hidden-chart case if the Tab A description lists edge cases.
+
+### Round 39 · 13:05 · README describes Tab A's same-city and no-bars cases
+- Category: F (Round 38 queue item 3)
+- Found: README's "Plan my project" bullet did not mention Round 37 (same city picked twice: headline asks for a different City B) or Round 38 (buffer chart replaced by a note when every stage is unknown for both cities).
+- Changed: README.md: two sentences added to the "Plan my project" bullet, matching the app text.
+- Result: check.sh pass; docs only, tests unchanged (38). README statements missing app behaviour: 2 -> 0.
+- Next: (1) A person should fill data/tableD_handcheck.csv and put the accuracy in the README. (2) Re-screenshot Tab B at 390 px. (3) Final pre-submission scan: no personal information or keys in history.

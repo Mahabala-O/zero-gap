@@ -33,7 +33,10 @@ A Streamlit app with two tabs.
   Ana's figure uses stages drawn separately, which is an ASSUMPTION (see below). Move-in dates
   are the P50/P80 of whole simulated projects, so the P80 date is usually earlier than adding
   the two stage P80s in the table (few projects are slow at both stages); the app says so under
-  the table.
+  the table. If City A and City B are the same city, the headline says so and asks for a
+  different City B. If every stage is "unknown" for both cities at the chosen unit type (e.g.
+  mobile homes in Tustin and Santa Ana), the buffer chart is replaced by a one-line note instead
+  of an empty plot.
 - **City promise tracker.** Pick a city. For Tustin it says: "Slowest stage: Entitlement →
   permit, about 17 months behind the fastest quarter of OC cities. 29 permitting-related
   programs in its 2025 report; 14 are past their target date and not reported completed" (as of

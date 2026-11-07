@@ -29,7 +29,7 @@ A Streamlit app with two tabs.
 - **Plan my project.** Pick two cities, a unit type and an entitlement approval date. A Monte
   Carlo (5,000 draws) resamples real entitlement → permit → completion times from that city's
   reports. With the defaults (Tustin vs Santa Ana, all types) it says: "Budget **$16,100**
-  contingency in Tustin. **Santa Ana** is about **21 months** faster than Tustin at P80." Santa
+  contingency in Tustin. **Santa Ana** is about **22 months** faster than Tustin at P80" (start date 2026-11-07; the gap is the difference of the two move-in months shown). Santa
   Ana's figure uses stages drawn separately, which is an ASSUMPTION (see below). Move-in dates
   are the P50/P80 of whole simulated projects, so the P80 date is usually earlier than adding
   the two stage P80s in the table (few projects are slow at both stages); the app says so under

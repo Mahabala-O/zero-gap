@@ -223,3 +223,10 @@
 - Changed: app.py: the chart title is now bold Streamlit text above the chart (wraps); Plotly title removed, top margin 40 -> 10. tests/test_app_headline.py: new `test_tab_a_chart_title_wraps_at_phone_width` (fails on old code, passes now).
 - Result: check.sh pass; tests 32 -> 33. Re-screenshot tab1-phone-full.png: title fully visible on two lines. UX 12/13 -> 13/13.
 - Next: (1) Re-check Tab B phone screenshot for clipped text. (2) A person should fill data/tableD_handcheck.csv. (3) Tab A table at 390 px wraps "20 months / 31 months" over 4 lines; consider shorter cell text.
+
+### Round 33 · 12:56 · Tab A headline gap equals the difference of the move-in months shown
+- Category: C (statistic shown inconsistently). First re-screenshotted (Round 32 queue item 1): .ux/tab2-phone-full.png still has a sideways-scrolling program grid at 390 px (Status/Category off screen). Left as is: Round 19/20 tests require the wide Program column in an st.dataframe, and an st.table of 29 long rows would bury the draft. Logged as a known trade-off.
+- Found: .ux/tab1-phone-full.png: the headline said "Santa Ana is about 21 months faster than Tustin at P80", but the table's P80 move-in dates are May 2028 vs Mar 2030, 22 months apart. Cause: the gap came from exact days / 30.44, while the dates are shown as months.
+- Changed: app.py: headline gap = (year, month) difference of the two P80 move-in dates; "about the same" when they fall in the same month. tests/test_app_headline.py: new `test_tab_a_headline_gap_matches_shown_move_in_dates` (fails on old code: 21.0 != 22). README.md: quoted headline updated to 22 months with the start date it depends on.
+- Result: check.sh pass; tests 33 -> 34. Default-view headline vs table mismatch: 1 -> 0. UX Tab A 13/13 (unchanged); Tab B 12/13 (#8, known trade-off).
+- Next: (1) A person should fill data/tableD_handcheck.csv. (2) Tab B phone: consider dropping the "City's own status text" column (it is already quoted in the draft) if the tests allow. (3) Check the Tab B peer list and draft at a city with no overdue programs.

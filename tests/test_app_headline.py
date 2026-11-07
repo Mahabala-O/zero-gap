@@ -180,3 +180,20 @@ def test_tab_a_chart_title_wraps_at_phone_width():
     spec = json.loads(at.get("plotly_chart")[0].proto.spec)
     assert not spec["layout"].get("title", {}).get("text")
     assert any("Which stage adds the most buffer" in m.value for m in at.markdown)
+
+
+def test_tab_a_headline_gap_matches_shown_move_in_dates():
+    # Round 33: default view showed P80 move-in "Mar 2030" (Tustin) vs "May 2028" (Santa Ana),
+    # 22 months apart, but the headline said "about 21 months faster" (gap taken from exact
+    # days). The headline gap must equal the difference of the two shown months.
+    import re
+    import pandas as pd
+    at = AppTest.from_file("app.py", default_timeout=120).run()
+    assert not at.exception
+    t = tab_a_table(at)
+    row = [i for i in t.index if i.startswith("Move-in")][0]
+    p80 = [pd.Timestamp(t.loc[row, c].split(" / ")[1]) for c in t.columns]
+    shown = abs((p80[0].year - p80[1].year) * 12 + p80[0].month - p80[1].month)
+    head = [m.value for m in at.markdown if "faster than" in m.value][0]
+    said = float(re.search(r"about \*\*([\d.]+) months?\*\* faster", head).group(1))
+    assert said == shown

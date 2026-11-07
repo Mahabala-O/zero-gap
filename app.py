@@ -162,8 +162,10 @@ with tab_a:
     else:
         parts.append(f"Contingency for {title(city_a)} is **unknown**: too few records.")
     if ra["co_date"]["P80"] != U and rb["co_date"]["P80"] != U and city_a != city_b:
-        gap = (ra["co_date"]["P80"] - rb["co_date"]["P80"]).days / A.DAYS_PER_MONTH
-        if abs(gap) < 0.5:
+        # Gap = difference of the shown move-in months, so it matches the table's dates.
+        pa, pb = pd.Timestamp(ra["co_date"]["P80"]), pd.Timestamp(rb["co_date"]["P80"])
+        gap = (pa.year - pb.year) * 12 + pa.month - pb.month
+        if gap == 0:
             parts.append("The two cities are about the same at P80.")
         else:
             fast, slow = (city_b, city_a) if gap > 0 else (city_a, city_b)

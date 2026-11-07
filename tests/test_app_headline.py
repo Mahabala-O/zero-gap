@@ -347,3 +347,15 @@ def test_tab_b_at_or_ahead_says_when_only_one_stage_compared():
     at.selectbox(key="city_b_tab").set_value("SANTA ANA").run()  # both stages compared
     text = " ".join(m.value for m in at.markdown)
     assert "at or ahead of the fastest quarter of OC cities on both stages." in text
+
+
+def test_default_cost_matches_synthetic_deal_and_caption():
+    # ASSUMPTION default = synthetic time cost / 48 months; caption must show the same number.
+    import json, re
+    deal = json.load(open("lanes/3-fund-it/data/synthetic-example-deal.json"))
+    time_cost = deal["cost_to_create"]["time_costs_while_waiting"]["value"]
+    src = open("app.py").read()
+    default = int(re.search(r"^DEFAULT_MONTHLY_COST = (\d+)", src, re.M).group(1))
+    assert default == round(time_cost / 48)
+    at = AppTest.from_file("app.py", default_timeout=60).run()
+    assert any(f"${default:,}/month" in c.value for c in at.caption)

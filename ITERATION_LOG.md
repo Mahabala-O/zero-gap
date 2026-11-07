@@ -335,3 +335,10 @@
 - Changed: app.py: "at or ahead" headline now ends "on the only stage that can be compared (the other is unknown or same-day)." or "on both stages.". README.md: City promise tracker bullet mentions it. tests/test_app_headline.py: the new test (Dana Point, Santa Ana).
 - Result: check.sh pass; tests 44 -> 45. Jurisdictions with an implied two-stage "at or ahead" from one stage: 5 -> 0.
 - Next: (1) A person should fill data/tableD_handcheck.csv and put the accuracy in the README. (2) A person should confirm .env.example holds only ANTHROPIC_API_KEY=. (3) Make the repo public before 14:30.
+
+### Round 49 · 13:24 · Carrying-cost caption reads the default from the constant
+- Category: C (an assumption's number was shown in two places that could drift apart)
+- Found: app.py caption hard-coded "$1,771/month" separately from DEFAULT_MONTHLY_COST = 1771; changing one would leave the ASSUMPTION label showing the wrong number. Checked: synthetic deal time_costs_while_waiting = $85,000 / 48 months = 1,770.8 -> 1,771 (matches).
+- Changed: app.py: caption uses f"${DEFAULT_MONTHLY_COST:,}". tests/test_app_headline.py: `test_default_cost_matches_synthetic_deal_and_caption` checks the default equals round(85000/48) read from the deal JSON and that the rendered caption shows it.
+- Result: check.sh pass; tests 45 -> 46. Hard-coded copies of the default cost in app.py: 2 -> 1.
+- Next: (1) A person should fill data/tableD_handcheck.csv and put the accuracy in the README. (2) A person should confirm .env.example holds only ANTHROPIC_API_KEY=. (3) Make the repo public before 14:30.

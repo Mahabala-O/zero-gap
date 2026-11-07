@@ -148,7 +148,7 @@ with tab_a:
     with st.expander("Carrying cost per month (ASSUMPTION)"):
         cost = st.number_input("Carrying cost, $ per month", min_value=0, step=100,
                                value=DEFAULT_MONTHLY_COST)
-        st.caption("ASSUMPTION: $1,771/month is derived from the SYNTHETIC deal in "
+        st.caption(f"ASSUMPTION: ${DEFAULT_MONTHLY_COST:,}/month is derived from the SYNTHETIC deal in "
                    "lanes/3-fund-it/data/synthetic-example-deal.json ($85k / 48 months). "
                    "It is not a real figure; replace it with yours.")
 

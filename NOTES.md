@@ -15,6 +15,39 @@ gap.**
   (HSC 50052.5) has to be read by hand from a site that blocks automated fetching, and getting
   the formula wrong breaks the whole tool.
 
+> **Status (update):** the team wants the tool to suggest actions, not only show bottlenecks. A
+> second round of data search is below ("More public data, round 2"). The final scope is still
+> open; the APR Table A2 work stays the base in every option.
+
+## More public data, round 2 (checked 2026-11-07)
+
+None of these are in the starter DATA-SOURCES lists. All loaded today with metadata or
+small-sample calls only.
+
+| Dataset | What it adds | OC coverage today | URL / ID |
+|---|---|---|---|
+| **APR Table D: housing-element program implementation** | Each city's promised programs (e.g. ADU streamlining, permit-time review, objective design standards, CUP removal) with objective, target date and free-text status | 1,822 OC rows in report year 2025, 35 jurisdictions; 721–1,822 rows per year 2018–2025 | data.ca.gov APR dataset, resource `37724925-2014-4646-ade8-3ba9f3ff9fb8` |
+| APR Table A (applications) | `APP_SUBMIT_DT`, status. Possible submit→entitlement stage via APN or tracking-ID join | 358,228 rows statewide | `c78b769d-cc02-4050-91ef-79ded665b5a8` |
+| APR Table C (rezoning sites), G (land transferred), H (surplus land), I/E/F/F2/K/L | Rezone dates, surplus parcels, other housing-element reporting | Not counted for OC yet | same dataset (IDs in the CKAN `package_show`) |
+| HCD Housing Element Compliance Report | Compliance status per city | OC 6th cycle: 33 "In", 2 "Out" (jurisdiction rows) | `2dcd1cd4-1348-4fc5-9c9c-219f82daac00` |
+| HCD 6th-cycle RHNA Progress | Units permitted vs target by income level | 539 jurisdictions statewide | `1e80a9cf-724c-432d-8374-e9708a6a92dc` |
+| HCD SB 35 determination map | Is streamlining available in this city | ArcGIS service, updated 2025-06 | https://data.ca.gov/dataset/streamlined-ministerial-approval-process-sb35-determination-map |
+| **CA State Controller, City Expenditures** | Planning and "Construction and Engineering Regulation" spending per city per fiscal year: a staffing/capacity proxy | All 34 OC cities, FY 2022–2025 | https://bythenumbers.sco.ca.gov (Socrata `ju3w-4gxp`, updated 2026-10-28) |
+| **LA City LADBS permits submitted 2020–present** | Real submitted→issued→CofO dates, ADU flag. The stage OC does not publish | 2024 ADU permits: 6,957 submitted, 5,769 issued, 3,333 with CofO | https://data.lacity.org Socrata `gwh9-jnip` (updated 2026-11-02); issued view `pi9x-tg5x` |
+| **San Diego development permits** | Project create, deemed-complete, approval create/issue dates, affordable unit counts | Header read only | https://data.sandiego.gov/datasets/development-permits/ |
+
+Notes:
+- Table D statuses are free text ("Project is delayed.", "Ongoing as projects are submitted
+  and reviewed.", "Completed. In December 2024, the City adopted Objective Design Standards…").
+  Classifying it needs Claude. Do it once at build time and cache it to CSV, then hand-check a sample.
+- Example (2025 APR, Tustin): objective "Update website with ADU permit guidance", target
+  2022-06-01, status "Project is delayed." Show it beside the A2 timeline, but never claim the
+  delay *caused* slower permits.
+- LA and San Diego are SoCal but not OC. Use them only as a labelled reference for the stages
+  OC does not measure, never as an OC number.
+- LADBS, San Diego and APR tables C/G/H include street addresses. Keep everything at city level.
+  Drop address and free-text notes columns at fetch time.
+
 ## The user (made up, from `lanes/2-clear-it/scenarios.json`, C02)
 
 A nonprofit project manager with a small project (ADU or 2–4 units) that could go in one of two

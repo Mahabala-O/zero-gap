@@ -279,3 +279,10 @@
 - Changed: app.py: peer category label capitalised for display only (data values unchanged). tests/test_app_headline.py: new `test_tab_b_peer_category_labels_capitalized` (old code shows "fees", so it would fail).
 - Result: check.sh pass; tests 38 -> 39. UX score Tab B phone 13/13 -> 13/13 (cosmetic consistency); lowercase peer labels for Tustin 3 -> 0.
 - Next: (1) A person should fill data/tableD_handcheck.csv and put the accuracy in the README. (2) Final pre-submission scan: no personal information or keys in history. (3) Program table on phone scrolls inside its frame; acceptable, leave as is.
+
+### Round 41 · 13:08 · Pre-submission scan for keys and personal information
+- Category: C (Round 40 queue item 2)
+- Found: `git log --all -p` grep for sk-ant-, AKIA, ghp_ and assigned ANTHROPIC_API_KEY values: 0 hits (only docs mentioning "ANTHROPIC_API_KEY= only"). `.env` not tracked (only .env.example). Email/phone grep over tracked files outside lanes/ and docs/: 3 hits, all the same public toll-free ride-share number (1-844-...) in data/oc_apr_tableD.csv city program text; not a person, no action.
+- Changed: README.md: "Data and privacy" section records the scan, its date and the single non-personal hit.
+- Result: check.sh pass; docs only, tests unchanged (39). Keys found in history: 0; personal records found: 0.
+- Next: (1) A person should fill data/tableD_handcheck.csv and put the accuracy in the README. (2) A person should confirm .env.example holds only ANTHROPIC_API_KEY= (this round's tool policy blocked reading it). (3) Make the repo public before 14:30.

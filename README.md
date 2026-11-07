@@ -149,6 +149,12 @@ coordinates are dropped when the data is fetched, and APNs are used only to link
 shown. It contains no personal information about real tenants, buyers or residents. It does not
 file applications or contact any city or person.
 
+Pre-submission scan (2026-11-07, 13:08): full git history searched for API-key patterns
+(`sk-ant-`, AWS, GitHub tokens): none found; `.env` is not tracked. Tracked files outside
+`lanes/` and `docs/` searched for email addresses and phone numbers: the only hit is a city
+ride-share program's public toll-free number quoted inside the state's Table D text (not a
+person).
+
 ## License
 
 MIT, see [LICENSE](LICENSE).

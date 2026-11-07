@@ -260,3 +260,14 @@ def test_tab_a_chart_hidden_when_no_bars():
     assert any("No buffer chart" in c.value for c in at.caption)
     unit.select("ADU").run()
     assert len(at.get("plotly_chart")) == 1
+
+
+def test_tab_b_peer_category_labels_capitalized():
+    # Default city (Tustin) lists open categories such as "fees"; each label starts uppercase.
+    import re
+    at = AppTest.from_file("app.py", default_timeout=120).run()
+    assert not at.exception
+    peers = [m.value for m in at.markdown if m.value.startswith("**Peers that report")]
+    assert peers
+    labels = re.findall(r"^- \*\*(.+?):\*\*", peers[0], flags=re.M)
+    assert labels and all(l[0].isupper() for l in labels), labels

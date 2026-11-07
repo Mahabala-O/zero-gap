@@ -369,8 +369,9 @@ with tab_b:
         lines = []
         for c in open_cats:
             peers = A.peers_completed(prog_all, city, c)
-            lines.append(f"- **{c}:** " + (", ".join(title(p) for p in peers) if peers
-                                            else "none reported completed"))
+            label = c[:1].upper() + c[1:]  # display only: "fees" -> "Fees"
+            lines.append(f"- **{label}:** " + (", ".join(title(p) for p in peers) if peers
+                                                else "none reported completed"))
         if lines:
             st.markdown("**Peers that report completing the same kind of program** "
                         "(where this city's is not completed):\n" + "\n".join(lines))

@@ -272,3 +272,10 @@
 - Changed: README.md: two sentences added to the "Plan my project" bullet, matching the app text.
 - Result: check.sh pass; docs only, tests unchanged (38). README statements missing app behaviour: 2 -> 0.
 - Next: (1) A person should fill data/tableD_handcheck.csv and put the accuracy in the README. (2) Re-screenshot Tab B at 390 px. (3) Final pre-submission scan: no personal information or keys in history.
+
+### Round 40 · 13:07 · Tab B peer category labels start with a capital letter
+- Category: D (Round 39 queue item 2: re-screenshot Tab B at 390 px)
+- Found: .ux/tab2-phone-full.png: no horizontal page scroll, headline in the first screen, disclaimer once; rubric 13/13 for Tab B phone. Only blemish: peer list mixed "ADU streamlining:" with lowercase "fees:", "objective standards:", "permit-time review:".
+- Changed: app.py: peer category label capitalised for display only (data values unchanged). tests/test_app_headline.py: new `test_tab_b_peer_category_labels_capitalized` (old code shows "fees", so it would fail).
+- Result: check.sh pass; tests 38 -> 39. UX score Tab B phone 13/13 -> 13/13 (cosmetic consistency); lowercase peer labels for Tustin 3 -> 0.
+- Next: (1) A person should fill data/tableD_handcheck.csv and put the accuracy in the README. (2) Final pre-submission scan: no personal information or keys in history. (3) Program table on phone scrolls inside its frame; acceptable, leave as is.

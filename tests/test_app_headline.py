@@ -295,3 +295,13 @@ def test_tab_b_overdue_uses_todays_date_not_first_load(monkeypatch):
     Day.fixed = datetime.date(2035, 1, 1)
     late = tustin_head()
     assert early != late
+
+
+def test_tab_a_zero_cost_does_not_say_budget_zero():
+    # Carrying cost 0 makes the contingency $0; the headline must say why, not "Budget $0".
+    at = AppTest.from_file("app.py", default_timeout=120).run()
+    at.number_input[0].set_value(0).run()
+    assert not at.exception
+    text = " ".join(m.value for m in at.markdown)
+    assert "Budget **$0**" not in text
+    assert "carrying cost is set to $0/month" in text

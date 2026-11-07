@@ -293,3 +293,10 @@
 - Changed: app.py: `programs(today)` takes the date as an argument, so the cache key changes each day; the call passes `dt.date.today()`. tests/test_app_headline.py: the new test.
 - Result: check.sh pass; tests 39 -> 40. Days the overdue count can go stale on a running app: unbounded -> 0.
 - Next: (1) A person should fill data/tableD_handcheck.csv and put the accuracy in the README. (2) A person should confirm .env.example holds only ANTHROPIC_API_KEY=. (3) Make the repo public before 14:30.
+
+### Round 43 · 13:12 · Tab A headline explains a $0 contingency when cost is set to $0
+- Category: E (unhandled edge case: input at its minimum)
+- Found: Setting "Carrying cost, $ per month" to 0 (allowed, min_value=0) made the headline say "Budget **$0** contingency in Tustin", which reads as "no time risk" although the P80 - P50 time gap is unchanged. New test `test_tab_a_zero_cost_does_not_say_budget_zero` fails on the old code.
+- Changed: app.py: when cost is 0 the headline says "Contingency is $0 only because carrying cost is set to $0/month: enter your monthly cost to price the delay." tests/test_app_headline.py: the new test.
+- Result: check.sh pass; tests 40 -> 41. Misleading "$0 contingency" headlines at cost 0: 1 -> 0.
+- Next: (1) A person should fill data/tableD_handcheck.csv and put the accuracy in the README. (2) A person should confirm .env.example holds only ANTHROPIC_API_KEY=. (3) Make the repo public before 14:30.

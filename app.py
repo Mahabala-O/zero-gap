@@ -158,7 +158,11 @@ with tab_a:
     # Headline: contingency for City A, then which city is faster at P80 (move-in date).
     ra, rb = res["A"], res["B"]
     parts = []
-    if ra["contingency"] != U:
+    if ra["contingency"] != U and cost == 0:
+        # "$0 contingency" would read as "no time risk"; the time gap still exists.
+        parts.append("Contingency is **$0** only because carrying cost is set to $0/month: "
+                     "enter your monthly cost to price the delay.")
+    elif ra["contingency"] != U:
         parts.append(f"Budget **{dollars(shown_contingency(ra))}** contingency in "
                      f"{title(city_a)} (P80 minus P50 carrying cost, ASSUMPTION cost/month).")
     else:

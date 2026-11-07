@@ -258,3 +258,10 @@
 - Changed: app.py: headline adds "City A and City B are the same city: pick a different City B to compare." when they match. tests/test_app_headline.py: new `test_tab_a_same_city_twice_says_so` (fails on old code, passes now).
 - Result: check.sh pass; tests 36 -> 37. Same-city view with no explanation: 1 -> 0.
 - Next: (1) A person should fill data/tableD_handcheck.csv and put the accuracy in the README. (2) Re-screenshot Tab B at 390 px. (3) Tab A chart with no bars for either city (both unknown) shows an empty plot; consider hiding it.
+
+### Round 38 · 13:04 · Tab A hides the buffer chart when it would have no bars
+- Category: E (Round 37 queue item 3: unhandled edge case)
+- Found: Unit type "Mobile home (MH)" (also "2 to 4 units") is unknown for both stages in Tustin and Santa Ana (n below MIN_N), so the buffer chart rendered as an empty plot with axes, which reads like "no buffer" rather than "unknown".
+- Changed: app.py: the chart and its title show only if at least one bar exists; otherwise a caption says "No buffer chart: every stage is unknown for both cities at this unit type." tests/test_app_headline.py: new `test_tab_a_chart_hidden_when_no_bars` (fails on old code: 1 chart != 0; passes now; ADU still shows the chart).
+- Result: check.sh pass; tests 37 -> 38. Default-city unit types with an empty chart: 2 -> 0.
+- Next: (1) A person should fill data/tableD_handcheck.csv and put the accuracy in the README. (2) Re-screenshot Tab B at 390 px. (3) README: mention the hidden-chart case if the Tab A description lists edge cases.

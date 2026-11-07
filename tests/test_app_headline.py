@@ -242,3 +242,21 @@ def test_tab_a_same_city_twice_says_so():
     assert "faster than" not in text
     at.selectbox[1].select_index(at.selectbox[1].options.index("Santa Ana")).run()
     assert "pick a different City B" not in " ".join(m.value for m in at.markdown)
+
+
+def test_tab_a_chart_hidden_when_no_bars():
+    # Round 38: Mobile home (MH) is unknown for every stage in Tustin and Santa Ana, so the
+    # buffer chart had no bars at all (an empty plot). Hide it and say why instead.
+    import analysis as A
+    df = A.add_durations(A.load_a2())
+    for c in ["TUSTIN", "SANTA ANA"]:
+        for s in ["ent_to_permit", "permit_to_co"]:
+            assert A.summary(df, c, "MH", s)["P50"] == A.UNKNOWN
+    at = AppTest.from_file("app.py", default_timeout=120).run()
+    unit = at.selectbox[2]
+    unit.select("MH").run()
+    assert not at.exception
+    assert len(at.get("plotly_chart")) == 0
+    assert any("No buffer chart" in c.value for c in at.caption)
+    unit.select("ADU").run()
+    assert len(at.get("plotly_chart")) == 1

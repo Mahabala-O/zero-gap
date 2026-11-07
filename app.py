@@ -234,21 +234,26 @@ with tab_a:
         st.caption("Your start date is in the past; dates are still counted from it.")
 
     # One chart: which stage adds the most planning buffer (P80 - P50), per city.
-    fig = go.Figure()
+    fig, any_bar = go.Figure(), False
     for k, city in picks.items():
         ys = []
         for s in STAGE_LABELS:
             sm = stage_summary(city, unit_cat, s)
             # Shown P80 minus shown P50 (half months), so a bar matches the table above it.
             ys.append(None if U in (sm["P50"], sm["P80"]) else half(sm["P80"]) - half(sm["P50"]))
+        any_bar = any_bar or any(y is not None for y in ys)
         fig.add_bar(name=f"{title(city)} ({k})", x=list(STAGE_LABELS.values()), y=ys,
                     marker_color=COLORS[k])
-    # Title as Streamlit text, not a Plotly title: Plotly clips long titles at phone width.
-    st.markdown("**Which stage adds the most buffer (P80 − P50)**")
-    fig.update_layout(yaxis_title="Extra months to plan for", xaxis_title="Stage",
-                      barmode="group", height=320, margin=dict(l=10, r=10, t=10, b=10),
-                      legend=dict(orientation="h", y=-0.3))
-    st.plotly_chart(fig, use_container_width=True)
+    if any_bar:
+        # Title as Streamlit text, not a Plotly title: Plotly clips long titles at phone width.
+        st.markdown("**Which stage adds the most buffer (P80 − P50)**")
+        fig.update_layout(yaxis_title="Extra months to plan for", xaxis_title="Stage",
+                          barmode="group", height=320, margin=dict(l=10, r=10, t=10, b=10),
+                          legend=dict(orientation="h", y=-0.3))
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        # An empty plot looks like "zero buffer"; say it is unknown instead.
+        st.caption("No buffer chart: every stage is unknown for both cities at this unit type.")
 
     with st.expander("Sources and caveats"):
         src = sources()

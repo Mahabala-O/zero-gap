@@ -367,3 +367,13 @@ def test_default_cost_caption_cites_source_of_48_months():
     at = AppTest.from_file("app.py", default_timeout=60).run()
     cap = next(c.value for c in at.caption if "/month is derived" in c.value)
     assert "docs/background.md" in cap and "48 months" in cap
+
+
+def test_methods_text_draw_count_matches_simulation():
+    # The "Sources and caveats" text must state the draw count the simulation actually uses.
+    import analysis as A
+    at = AppTest.from_file("app.py", default_timeout=120).run()
+    assert not at.exception
+    text = " ".join(m.value for m in at.markdown)
+    assert f"Monte Carlo: {A.N_DRAWS:,} draws" in text
+    assert A.monte_carlo.__defaults__[0] == A.N_DRAWS

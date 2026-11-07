@@ -18,6 +18,7 @@ DATA_DIR = Path(__file__).parent / "data"
 # ASSUMPTION: minimum sample size for a benchmark. Below this a cell is "unknown".
 MIN_N = 30
 DAYS_PER_MONTH = 30.4375  # average Gregorian month length
+N_DRAWS = 5000  # Monte Carlo draws per city; app.py methods text reads this
 STAGES = {"ent_to_permit": ("ENT_APPROVE_DT1", "BP_ISSUE_DT1"),
           "permit_to_co": ("BP_ISSUE_DT1", "CO_ISSUE_DT1")}
 UNKNOWN = "unknown"
@@ -99,7 +100,7 @@ def _stage_pool(sub: pd.DataFrame, stage: str) -> np.ndarray:
 
 
 def monte_carlo(df: pd.DataFrame, city: str, unit_cat: str | None, start_date,
-                monthly_cost: float, draws: int = 5000, seed: int = 42,
+                monthly_cost: float, draws: int = N_DRAWS, seed: int = 42,
                 min_n: int = MIN_N) -> dict:
     """Resample stage durations for one city x unit category. df must come from add_durations.
 

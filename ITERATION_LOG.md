@@ -349,3 +349,10 @@
 - Changed: app.py: caption and ASSUMPTION comment name docs/background.md as the source of 48 months. README.md: sources row says the same. tests/test_app_headline.py: `test_default_cost_caption_cites_source_of_48_months`.
 - Result: check.sh pass; tests 46 -> 47. Unsourced numbers in the carrying-cost caption: 1 -> 0.
 - Next: (1) A person should fill data/tableD_handcheck.csv and put the accuracy in the README. (2) A person should confirm .env.example holds only ANTHROPIC_API_KEY=. (3) Make the repo public before 14:30.
+
+### Round 51 · 13:27 · Methods text reads the Monte Carlo draw count from the code
+- Category: C (an on-screen number kept apart from the code that sets it)
+- Found: the "Sources and caveats" text in app.py (line 275) said "5,000 draws" as fixed text, while analysis.monte_carlo set its own default `draws: int = 5000`. Changing one would leave the methods text wrong. Checked: app.py calls monte_carlo without `draws=`, so the screen is correct today.
+- Changed: analysis.py: new constant N_DRAWS = 5000, used as monte_carlo's default. app.py: methods text uses f"{A.N_DRAWS:,}". tests/test_app_headline.py: `test_methods_text_draw_count_matches_simulation`.
+- Result: check.sh pass; tests 47 -> 48. Hard-coded copies of the draw count: 2 -> 1.
+- Next: (1) A person should fill data/tableD_handcheck.csv and put the accuracy in the README. (2) A person should confirm .env.example holds only ANTHROPIC_API_KEY= (this round's agent was not allowed to read it). (3) Make the repo public before 14:30.

@@ -272,7 +272,7 @@ with tab_a:
             f"[API link]({t['url']})\n"
             "- Durations use only records that report both dates in the same row. "
             f"Cells with fewer than {A.MIN_N} records show \"unknown\" (ASSUMPTION threshold).\n"
-            "- Monte Carlo: 5,000 draws from that city's past records. When fewer than "
+            f"- Monte Carlo: {A.N_DRAWS:,} draws from that city's past records. When fewer than "
             f"{A.MIN_N} records hold both stages, the stages are drawn separately "
             "(ASSUMPTION: independent).")
         ana = stage_summary("ANAHEIM", None, "ent_to_permit")

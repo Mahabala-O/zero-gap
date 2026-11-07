@@ -34,7 +34,10 @@ A Streamlit app with two tabs.
 - **City promise tracker.** Pick a city. For Tustin it says: "Slowest stage: Entitlement →
   permit, about 17 months behind the fastest quarter of OC cities. 29 permitting-related
   programs in its 2025 report; 14 are past their target date and not reported completed." Every
-  program label sits next to the city's own status text.
+  program label sits next to the city's own status text. Program names on screen are the city's
+  own words, shortened: leading words that every name in a city shares (e.g. Tustin's "6th HE
+  Cycle") are left out, and same-looking names add the start of their own objective. The data
+  and the draft keep the full names.
 
 **Demo video:** [to add]
 **Live demo:** [to add, e.g. Streamlit Community Cloud]

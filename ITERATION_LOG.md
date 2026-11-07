@@ -146,3 +146,10 @@
 - Changed: analysis.py: new `_drop_shared_lead()`; `program_labels()` leaves out leading whole words shared by every name in a city with ≥ 3 programs and never empties a name. The draft, the city's own status text and the data are unchanged; only the on-screen label is shorter. tests/test_analysis.py: new test (Tustin-style prefix dropped; "PP-B.5"/"PP-G.2" kept because no whole word is shared; a name made only of shared words is kept).
 - Result: check.sh pass; tests 23 -> 24. Cities whose labels start with words that differ: 10 more (Tustin, Garden Grove, Laguna Woods, Lake Forest, Los Alamitos, Mission Viejo, Orange County, San Clemente, Seal Beach, Westminster). Tustin label now e.g. "1.7 (Modified) Accessory Dwelling Units Program a. Promote… — Update ADU Ordinance…".
 - Next: (1) Re-screenshot Tab B (Tustin, 1280 px) to confirm the labels read well. (2) A person should fill data/tableD_handcheck.csv. (3) README: note that program labels are shortened (city's own words, shared lead words left out).
+
+### Round 22 · 12:32 · README says how Tab B shortens program names
+- Category: F
+- Found: Round 21 queue: Round 21 shortened the on-screen program labels (it leaves out lead words that every name in a city shares), but README.md line 37 only said "Every program label sits next to the city's own status text". Nothing told a reader that the names on screen are shortened, or that the draft uses the full name (drafts.py uses PROGRAM_NAME, not program_labels).
+- Changed: README.md: the City promise tracker bullet now says names on screen are the city's own words, shortened (shared lead words left out, e.g. Tustin's "6th HE Cycle"; same-looking names add the start of their own objective), and that the data and the draft keep the full names.
+- Result: check.sh pass; 24 tests. Ways the app changes on-screen text that the README describes: missing -> described.
+- Next: (1) Re-screenshot Tab B (Tustin, 1280 px) to confirm the shortened labels read well. (2) The peer list's category labels mix case ("ADU streamlining" vs "fees"). (3) A person should fill data/tableD_handcheck.csv.

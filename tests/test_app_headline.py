@@ -197,3 +197,22 @@ def test_tab_a_headline_gap_matches_shown_move_in_dates():
     head = [m.value for m in at.markdown if "faster than" in m.value][0]
     said = float(re.search(r"about \*\*([\d.]+) months?\*\* faster", head).group(1))
     assert said == shown
+
+
+def test_tab_b_headline_counts_unknown_overdue():
+    # Costa Mesa: every program's target is not a single date, so overdue is "unknown" for all.
+    # The headline must not read as "0 overdue" without saying the rest are unknown.
+    import datetime as dt
+    import analysis as A
+    p = A.add_overdue(A.load_programs(), dt.date.today())
+    cm = p[p["JURIS_NAME"] == "COSTA MESA"]
+    n_unk = int((cm["overdue"] == "unknown").sum())
+    assert n_unk > 0
+    at = AppTest.from_file("app.py", default_timeout=120).run()
+    at.selectbox(key="city_b_tab").select("COSTA MESA").run()
+    assert not at.exception
+    text = " ".join(m.value for m in at.markdown)
+    assert f"for **{n_unk}**, whether they are overdue is **unknown**" in text
+    # Tustin has no unknown targets: no unknown clause there.
+    at.selectbox(key="city_b_tab").select("TUSTIN").run()
+    assert "whether they are overdue is" not in " ".join(m.value for m in at.markdown)

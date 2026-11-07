@@ -230,3 +230,10 @@
 - Changed: app.py: headline gap = (year, month) difference of the two P80 move-in dates; "about the same" when they fall in the same month. tests/test_app_headline.py: new `test_tab_a_headline_gap_matches_shown_move_in_dates` (fails on old code: 21.0 != 22). README.md: quoted headline updated to 22 months with the start date it depends on.
 - Result: check.sh pass; tests 33 -> 34. Default-view headline vs table mismatch: 1 -> 0. UX Tab A 13/13 (unchanged); Tab B 12/13 (#8, known trade-off).
 - Next: (1) A person should fill data/tableD_handcheck.csv. (2) Tab B phone: consider dropping the "City's own status text" column (it is already quoted in the draft) if the tests allow. (3) Check the Tab B peer list and draft at a city with no overdue programs.
+
+### Round 34 · 12:58 · Tab B headline says when "overdue" is unknown instead of implying 0
+- Category: C (Round 33 queue item 3: checked Tab B at cities with no overdue programs)
+- Found: ran Tab B for all 35 cities via AppTest: no exceptions. But Costa Mesa (17 programs, all with a non-date target, so overdue = "unknown") read "**0** are past their target date", which implies none are late. Same for Brea (5 unknown), Laguna Hills (15), Huntington Beach (2), Aliso Viejo (2), Orange (1). Also "**1** are past" grammar for 15 cities.
+- Changed: app.py: the headline adds "for **N**, whether they are overdue is **unknown** (the target is not a single date)" when N > 0, and says "1 is". tests/test_app_headline.py: new `test_tab_b_headline_counts_unknown_overdue` (Costa Mesa shows the clause; Tustin, with none unknown, does not).
+- Result: check.sh pass; tests 34 -> 35. Cities whose headline hid unknown-overdue programs: 6 -> 0.
+- Next: (1) A person should fill data/tableD_handcheck.csv. (2) Laguna Niguel (0 programs) shows both "0 programs; 0 are past…" and an info box; drop the redundant count. (3) Tab B phone: consider dropping the "City's own status text" column if the tests allow.

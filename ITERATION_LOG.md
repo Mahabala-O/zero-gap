@@ -132,3 +132,10 @@
 - Changed: app.py: the Tab B program table sets `column_config={"Program": TextColumn(width="large")}` (no data or wording change). tests/test_app_headline.py: an AppTest checks the Program column width is "large".
 - Result: check.sh pass; tests 22 -> 23. In the new .ux/tab2-desktop-full.png the full ~60-character name and the start of the objective ("— Up…", "— Est…") are visible. Trade-off: Status is now cut off at the right edge at 1280 px. Overdue already says whether a program is reported completed, and Status is one scroll away.
 - Next: (1) If Status matters on screen, shorten program_labels name_len (e.g. 45) so Status fits too. (2) The peer list's category labels mix case ("ADU streamlining" vs "fees"). (3) A person should fill data/tableD_handcheck.csv.
+
+### Round 20 · 12:30 · Tab B program table keeps Status on screen at 1280 px
+- Category: D
+- Found: screenshot.py → .ux/tab2-desktop-full.png (Tustin, 1280 px): after round 19 widened Program, the Status column ("ongoing", "delayed", "unclear") was cut to "on|", "del|" at the right edge, while Category took the visible space. Status tells a reader whether an overdue program is being worked on, so it helps the decision more than Category does.
+- Changed: app.py: Tab B program table column order is now Overdue, Target date, Program, Status, Category, city's own text (no data or wording change). tests/test_app_headline.py: the column-order AppTest now checks the first four columns.
+- Result: check.sh pass; 23 tests. Columns fully readable at 1280 px: Overdue, Target date, Program, Category -> Overdue, Target date, Program, Status (Category is now the one at the edge).
+- Next: (1) Tustin labels all start "6th HE Cycle …", which uses up the 60-char name budget; consider removing a prefix that every row in a city shares from the label (city's own words, just shorter). (2) The peer list's category labels mix case ("ADU streamlining" vs "fees"). (3) A person should fill data/tableD_handcheck.csv.

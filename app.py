@@ -322,8 +322,8 @@ with tab_b:
             "Overdue": show["overdue"],
             "Target date": show["target_date"].fillna(U),
             "Program": labels,
-            "Category": show["category"],
             "Status": show["status_bucket"],
+            "Category": show["category"],
             "City's own status text": show["PROGRAM_STATUS"],
         }), use_container_width=True, hide_index=True,
             # Wide Program column so the label (and its objective snippet) is readable at 1280 px.

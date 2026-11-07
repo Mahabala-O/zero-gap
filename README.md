@@ -1,153 +1,139 @@
-# Claude Impact Lab: UCI × SoCal Affordable Housing
+# Permit Clock
 
-**Saturday, November 7, 2026 · Paul Merage School of Business, UC Irvine**
+> For a nonprofit project manager or city housing staff in Orange County: how long permitting
+> will really take in a given city, what that delay costs, and which of the city's own
+> permitting promises are past their target date. Built on the state's own housing reports.
 
-One day. One equation that does not balance: what a family can afford to pay, plus public subsidy,
-plus fundraising, minus the cost to create the home. In Orange County the cost side wins by six
-figures per home. Small teams build a working prototype with Claude that helps close the gap.
+**Prototype only. Not legal, financial or lending advice.** Ask a professional before you decide.
 
-Organized by Claude Community Orange County with the UCI Center for Real Estate. Sponsor: EyeOn
-Automations.
+**Team:** [team name: to fill]
+**Members:** [names: to fill]
+**Lane:** 2 Clear it (with a bridge to Lane 3: time becomes gap dollars)
+**Built at:** Claude Impact Lab: UCI × SoCal Affordable Housing, November 7, 2026
 
-**The challenge brief** (3 pages: the $0 equation, the three lanes, a worked example, judging): [docs/challenge-brief.pdf](docs/challenge-brief.pdf).
-The kickoff slides: [docs/kickoff-slides.pdf](docs/kickoff-slides.pdf).
+The event's own README (schedule, rules, lanes) is now in [EVENT-README.md](EVENT-README.md).
 
-**First hackathon?** You do not need a team, an idea or coding experience to start. Read
-[your first hackathon](docs/first-hackathon.md). Two minutes.
+## The real user
 
-## One link for everything
+The users below are made up, from `lanes/2-clear-it/scenarios.json`. They are not real people.
 
-**<https://claudesocal.com/uci-impact-lab>**
+| | Before | After |
+|---|---|---|
+| **Nonprofit project manager** with a small project that could go in one of two OC cities | One rule of thumb (about 4 years, land to keys, from the brief) and phone calls | Likely (P50) and safe-to-plan (P80) move-in dates for City A vs City B, with sample size n, and a contingency in dollars to budget. "Unknown" where a city did not report enough |
+| **City permit tech, housing staff or advocate** | Housing-element programs are buried in annual-report text; nobody tracks which permitting promises are overdue | The city's slowest stage vs the fastest quarter of OC cities, its permitting programs sorted by type and status with overdue ones flagged, peers that finished the same kind of program, and a drafted (never sent) request quoting the city's own promise |
 
-| On the hub | What it is |
-|---|---|
-| `#teams` | Register your team (by 10:00 AM) |
-| `#submit` | The submission form (due 2:30 PM) |
-| `#credits` | Your Claude API credits |
+## What we built
 
-## Bring
+A Streamlit app with two tabs.
 
-- A laptop and its charger
-- A free [GitHub](https://github.com/signup) account. One per team is enough to start
-- A Claude account at [claude.ai](https://claude.ai)
-- Event credits: $100 in Claude API credits per person (API only, not Claude.ai). The claim link is on the hub at 9:15 AM. Claim using your Org ID from [console.anthropic.com](https://console.anthropic.com), not your Claude.ai ID. One claim per person. Credits are tied to the email you registered with, so people who registered on the day may not get them
+- **Plan my project.** Pick two cities, a unit type and an entitlement approval date. A Monte
+  Carlo (5,000 draws) resamples real entitlement → permit → completion times from that city's
+  reports. With the defaults (Tustin vs Santa Ana, all types) it says: "Budget **$16,100**
+  contingency in Tustin. **Santa Ana** is about **21 months** faster than Tustin at P80." Santa
+  Ana's figure uses stages drawn separately, which is an ASSUMPTION (see below).
+- **City promise tracker.** Pick a city. For Tustin it says: "Slowest stage: Entitlement →
+  permit, about 17 months behind the fastest quarter of OC cities. 29 permitting-related
+  programs in its 2025 report; 14 are past their target date and not reported completed." Every
+  program label sits next to the city's own status text.
 
-Wi-Fi: UCI-guest.
+**Demo video:** [to add]
+**Live demo:** [to add, e.g. Streamlit Community Cloud]
 
-## The day
+## How Claude is used
 
-| Time | What |
-|---|---|
-| 8:15 AM | Check-in and breakfast |
-| 9:00 AM | Kickoff in the auditorium. The lanes are revealed |
-| 9:30 AM | Anthropic build workshop, in the auditorium |
-| By 10:00 AM | Register your team on the hub (`#teams`) |
-| 10:00 AM | Go to the room your team picked |
-| Around noon | Lunch |
-| **2:30 PM** | **Submissions due.** Hub form, public repo and a demo video (30 seconds ideal). Anthropic Q&A for anyone who wants it |
-| 3:00 PM | Finalists announced. They present live in the auditorium |
-| 4:00 PM | Judges deliberate |
-| 4:15 PM | Winners and photos |
+- **Built with Claude Code**, in an attended start and then an unattended loop: one small change
+  per round, `scripts/check.sh` must pass before anything is pushed. Every round is logged in
+  [ITERATION_LOG.md](ITERATION_LOG.md).
+- **Classifying programs (once, at build time).** `scripts/classify_tableD.py` sent 367
+  keyword-filtered 2025 OC Table D rows to Claude Haiku 5.5 (`claude-haiku-5-5`) in batches of 20
+  (estimated cost $0.022, printed before sending). It labels category, status and target date,
+  using only the text given. The result is committed in `data/tableD_classified.csv`; the app
+  makes no live call for this. **A person checks:** `data/tableD_handcheck.csv` holds 20 random
+  rows for hand-checking. Accuracy: **unknown** until someone fills in the `correct?` column.
+- **Drafting a request (live, behind a button).** In Tab B, with an API key set, "Draft with
+  Claude" writes a short polite note that quotes the city's own program text. It is labelled
+  "Draft: review before use", cached, and **never sent**. With no key, the app shows a static
+  template built only from the city's own row.
 
-## The three lanes
+## Try it
 
-Teams of up to 5, ideally one of each role: builder/engineer, creative/designer,
-communicator/presenter, organizer/facilitator. Solo is fine to start: the hub's team board shows
-teams with open seats and the roles they want. Each team picks a room on the hub (rooms fill up as teams register), goes there, and picks one
-lane together. Any lane works in any room.
-
-| | Lane | The question | Who is stuck |
-|---|---|---|---|
-| 1 | [**Find it**](lanes/1-find-it/README.md) | Where can the next affordable home go? | An acquisitions lead with no GIS team, a congregation with an underused lot, city housing staff |
-| 2 | [**Clear it**](lanes/2-clear-it/README.md) | How do we turn four years into two? | A nonprofit project manager, a small builder, a homeowner adding an ADU, a city permit tech |
-| 3 | [**Fund it**](lanes/3-fund-it/README.md) | Does it pencil, and who closes the gap? | A nonprofit finance lead, a development director, a donor, a city housing analyst |
-
-Each lane page has the problem, who is stuck, the open question, a few ideas to get you thinking
-(not a spec) and a list of data to start from. Build what your team thinks will help.
-
-New to this field? The short [background](docs/background.md) and the [glossary](docs/glossary.md)
-cover the equation, the laws and the terms you will hear.
-
-## Your first 15 minutes
-
-1. **Get the files.** Use this repo as a template for your team, or download it as a ZIP.
-   [Getting started](docs/getting-started.md) shows both, and three ways to work with Claude:
-   in the browser, in the desktop app, or in a terminal.
-2. **Claim your credits** from the hub (`#credits`) once the link is up at 9:15 AM.
-3. **Register your team** on the hub (`#teams`) by 10:00 AM.
-4. **Name one real user.** Write down who they are and what their day looks like before and after.
-   Then open your lane's data list and look at what is there.
-
-## Before you build
-
-1. **Start with one real person** and the problem they're stuck on. Show their before and after.
-2. **Bend the brief** if it serves the goal: more affordable homes in Southern California.
-3. **Play fair with data.** Public or provided data only. Don't overload or abuse city websites.
-   No private plans or blueprints without permission, and no personal information about real
-   tenants, buyers or residents.
-
-The full version, with the reasons, is in [ground rules](docs/ground-rules.md).
-
-## Submit by 2:30 PM
-
-One per team:
-
-- the submission form at [claudesocal.com/uci-impact-lab](https://claudesocal.com/uci-impact-lab) (`#submit`)
-- a public GitHub repo with a README (see the [repo rules](docs/submission.md#repo-rules-so-judges-can-check-it-works))
-- a demo video made with Claude's help (30 seconds is ideal, up to 2 minutes)
-
-[How to submit](docs/submission.md).
-
-## Judging
-
-Judges first shortlist from all submissions. Finalists present live in the auditorium. Each
-finalist is scored from 1 to 5 in four areas. The areas have equal weight.
-
-| Area | The question |
-|---|---|
-| **Impact** | Would a nonprofit or city use it next month to help get homes built? |
-| **Works** | Does the live demo run on real data, with sources shown? Working beats polished |
-| **Scale** | Is there a believable path to the next 100 projects? |
-| **Innovation** | Is it a new way to see or solve the problem? |
-
-Ties go to Impact.
-
-Prizes: overall 1st, 2nd and 3rd, plus a winner in each lane. A live demo is required for
-finalists. Slides alone do not place. More in [judging](docs/judging.md).
-
-## Help
-
-- **About the day, the repo or your setup:** find an organizer.
-- **About your lane:** ask in your breakout room.
-- **Stuck on setup:** ask early. Nobody should lose the morning to an install.
-- **Something looks like real personal information:** stop and tell an organizer right away.
-
-## What is in this repo
-
-```text
-README.md            this page
-CLAUDE.md            instructions Claude Code reads when you open this repo
-docs/
-  first-hackathon.md   what to expect if this is your first one
-  getting-started.md   get the files, set up Claude
-  ground-rules.md      the rules in full
-  submission.md        what to hand in and how
-  challenge-brief.pdf  the 3-page brief handed out at kickoff
-  kickoff-slides.pdf   the slides from the morning kickoff
-  judging.md           how winners are picked
-  background.md        the $0 equation and the laws, in two pages
-  glossary.md          the terms you will hear
-lanes/
-  1-find-it/     problem, ideas, scenarios.json, data/ (DATA-SOURCES.md, pathways.json)
-  2-clear-it/    problem, ideas, scenarios.json, data/ (DATA-SOURCES.md, oc-cities.json, timeline.json)
-  3-fund-it/     problem, ideas, scenarios.json, data/ (DATA-SOURCES.md, synthetic-example-deal.json)
-templates/TEAM-README.md          the README your team's repo needs
+```bash
+git clone <this repo>
+cd zero-gap
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+streamlit run app.py
 ```
+
+Tested with Python 3.13. The app runs fully with **no API key**: the data and the program labels
+are cached CSVs in `data/`. For the optional live draft, copy `.env.example` to `.env` and set
+`ANTHROPIC_API_KEY` (or put it in Streamlit Secrets). Never commit a key.
+
+Run the checks: `bash scripts/check.sh` (key scan, compile, `pytest`, app runs with no key).
+
+## Sources and assumptions
+
+| Item | Source or assumption | Date checked |
+|---|---|---|
+| Permit timelines | HCD Annual Progress Report **Table A2**, data.ca.gov resource `fe505d9b-8c36-42ba-ba30-08bc4f34e022`, filtered to `CNTY_NAME = 'Orange'`, 53,578 rows. Addresses, project names, notes and coordinates dropped | 2026-11-07 |
+| Permitting programs | HCD Annual Progress Report **Table D**, data.ca.gov resource `37724925-2014-4646-ade8-3ba9f3ff9fb8`, filtered to the 34 OC cities plus Orange County, 8,623 rows (367 permitting-related 2025 rows classified) | 2026-11-07 |
+| Program labels | Claude Haiku 5.5 reading the city's own text. Not hand-checked yet (accuracy unknown) | 2026-11-07 |
+| City of Orange ADU permit → completion | BackyardADU.net reports 263 days; the APR data gives a different median. Both are shown in the app; we do not pick one | 2026-11-07 |
+| Carrying cost $1,771/month | **ASSUMPTION**: $85,000 time cost ÷ 48 months from the SYNTHETIC deal in `lanes/3-fund-it/data/synthetic-example-deal.json`. Editable in the app. Replace with yours | 2026-11-07 |
+| Minimum sample n = 30 | **ASSUMPTION**: below 30 records a cell shows "unknown" | 2026-11-07 |
+| Stages drawn separately | **ASSUMPTION**: when fewer than 30 records hold both stages, the two stages are drawn independently, which ignores any link between them. The app labels every result that uses this | 2026-11-07 |
+| OC best quartile | **ASSUMPTION**: 25th percentile of city medians (cities with n ≥ 30), excluding cities whose median is same-day (0 days), and "unknown" with fewer than 4 cities | 2026-11-07 |
+| Same-day pattern (Anaheim, Fullerton) | **INFERRED**: most of their records show the entitlement date equal to the permit date. Probably a reporting pattern, not speed | 2026-11-07 |
+
+Every number we made up is labelled ASSUMPTION here and in the tool.
+
+## What is real and what is mocked
+
+| Part | Status |
+|---|---|
+| OC permit timelines (Table A2, cached) | working, real data |
+| P50/P80 dates, contingency, stage spread (Tab A) | working |
+| Carrying cost per month | ASSUMPTION default from a synthetic deal; user-editable |
+| City stage medians vs OC best quartile (Tab B) | working |
+| Program type, status and target date (Tab B) | working; labels by Claude, not yet hand-checked |
+| Overdue flag | working: target date before today and status not "completed"; "unknown" when there is no single target date |
+| Peers that completed the same category | working (self-reported by cities) |
+| Draft a request | working: static template with no key; Claude draft behind a button with a key. Never sent |
+| Linking records across report years | counted only, not used: durations come from same-row date pairs |
+| State Controller spending per permit; LA/San Diego benchmarks; Claude memo on Tab A | cut |
+
+## Where it gets things wrong
+
+- **Reporting, not reality.** Every figure is what cities reported to the state. Irvine reports
+  very few entitlement dates, Costa Mesa few, and Huntington Beach reports no completion dates,
+  so those cells show "unknown".
+- **Same-day cities** (Anaheim, Fullerton) look fast from entitlement to permit because of how
+  they report. The app flags them; do not read them as fastest.
+- **Thin cells.** Affordable-only projects are too few for benchmarks, so the app uses all
+  projects of a unit type. Many city × unit-type cells are "unknown".
+- **Separate draws.** Where few records hold both stages (Santa Ana: 6 for all types), the
+  forecast assumes the stages are independent. Treat those results as rough.
+- **Program labels** come from Claude reading short status text. Accuracy is unknown until the
+  hand-check is done. A keyword fallback exists but agreed with Claude on only 47% of
+  categories, so it is weak.
+- **Association, not cause.** A city finishing a program and having faster permits does not mean
+  the program caused it. The app never says a city broke a law.
+
+## Next steps
+
+- Hand-check the 20 rows in `data/tableD_handcheck.csv` and publish the accuracy.
+- Ask two or three OC nonprofits to test Tab A on a live project, and one city housing team to
+  check Tab B against what they know.
+- Scale: the same state tables cover every California jurisdiction, so the next 100 projects
+  outside OC need a different filter, not a new data source.
+
+## Data and privacy
+
+This project uses only public data from data.ca.gov. Addresses, project names, notes and
+coordinates are dropped when the data is fetched, and APNs are used only to link records, never
+shown. It contains no personal information about real tenants, buyers or residents. It does not
+file applications or contact any city or person.
 
 ## License
 
-Code in this repo is released under the [MIT License](LICENSE). The brief, lane pages and glossary
-text are dedicated to the public domain (CC0). Third-party data, laws and documents linked here
-stay under their own terms.
-
-Teams own what they build. See [ground rules](docs/ground-rules.md).
+MIT, see [LICENSE](LICENSE).

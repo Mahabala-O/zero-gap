@@ -6,7 +6,7 @@
 
 **Prototype only. Not legal, financial or lending advice.** Ask a professional before you decide.
 
-**Team:** Zero Gap
+**Team:** seeeverything
 **Members:** Mikhail Orlov
 **Lane:** 2 Clear it (with a bridge to Lane 3: time becomes gap dollars)
 **Built at:** Claude Impact Lab: UCI × SoCal Affordable Housing, November 7, 2026
@@ -74,19 +74,65 @@ A Streamlit app with two tabs.
 
 ## Try it
 
+Runs on a laptop in about two minutes. **No API key is needed**: the data and the program
+labels are cached CSVs in `data/`.
+
+**You need:** Python 3.11 or newer (tested with 3.13) and git. Check them with
+`python3 --version` and `git --version`.
+
+**1. Get the code**
+
 ```bash
 git clone https://github.com/Mahabala-O/zero-gap
 cd zero-gap
-python3 -m venv .venv && source .venv/bin/activate
+```
+
+**2. Make a virtual environment and install the pinned packages** (one time)
+
+macOS / Linux:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
+```
+
+Windows (PowerShell):
+
+```powershell
+py -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
+
+**3. Start the app**
+
+```bash
 streamlit run app.py
 ```
 
-Tested with Python 3.13. The app runs fully with **no API key**: the data and the program labels
-are cached CSVs in `data/`. For the optional live draft, copy `.env.example` to `.env` and set
-`ANTHROPIC_API_KEY` (or put it in Streamlit Secrets). Never commit a key.
+Your browser opens at <http://localhost:8501>. If it does not, open that address yourself.
+Tab A (**Plan my project**) loads with a result already showing (Tustin vs Santa Ana); click
+**City promise tracker** for Tab B. To stop the app, press `Ctrl+C` in the terminal.
 
-Run the checks: `bash scripts/check.sh` (key scan, compile, `pytest`, app runs with no key).
+**Next time:** `cd zero-gap`, activate the environment again (`source .venv/bin/activate`, or
+`.venv\Scripts\Activate.ps1` on Windows), then `streamlit run app.py`.
+
+**Optional, the live Claude draft in Tab B:** copy `.env.example` to `.env` and put your key
+after `ANTHROPIC_API_KEY=`. Without a key, the button shows a template instead. Never commit
+`.env`.
+
+**If something goes wrong**
+
+| You see | Do this |
+|---|---|
+| `streamlit: command not found` | The environment is not active. Run the activate command from step 2, then try again |
+| `ModuleNotFoundError` | Run `pip install -r requirements.txt` with the environment active |
+| `Port 8501 is already in use` | Another copy is running. Stop it, or run `streamlit run app.py --server.port 8502` |
+| Windows blocks `Activate.ps1` | Run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once, then activate again |
+
+**Run the checks** (key scan, compile, tests, app runs with no key): `bash scripts/check.sh`.
+The tests need `pip install -r requirements-dev.txt` first.
 
 ## Sources and assumptions
 

@@ -29,6 +29,7 @@ def test_summary_unknown_below_min_n_and_percentiles():
     assert isinstance(s["P50"], float) and s["P25"] <= s["P50"] <= s["P75"] <= s["P80"]
     small = an.summary(d, "A", "ADU", "ent_to_permit", min_n=50)
     assert small["P50"] == "unknown" and small["n"] == 40
+    assert isinstance(s["same_day_pct"], float) and small["same_day_pct"] == "unknown"
     none = an.summary(d, "B", "ADU", "ent_to_permit")
     assert none["n"] == 0 and none["coverage_pct"] == "unknown" and none["P80"] == "unknown"
 

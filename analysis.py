@@ -59,8 +59,8 @@ def summary(df: pd.DataFrame, city: str, unit_cat: str | None, stage: str,
     """Months P25/P50/P75/P80, n, coverage % and same-day share for a city x unit category.
 
     df must come from add_durations. unit_cat None means all categories. Returns
-    {"n", "coverage_pct", "same_day_pct", "P25".."P80"} with the percentiles set to "unknown"
-    when n < min_n. coverage_pct = rows with a usable duration / rows for that city and category.
+    {"n", "coverage_pct", "same_day_pct", "P25".."P80"} with the percentiles and same_day_pct
+    set to "unknown" when n < min_n (a share of a handful of records is not a pattern). coverage_pct = rows with a usable duration / rows for that city and category.
     """
     sub = df[df["JURIS_NAME"].str.upper() == city.upper()]
     if unit_cat is not None:
@@ -70,7 +70,8 @@ def summary(df: pd.DataFrame, city: str, unit_cat: str | None, stage: str,
     res = {"n": n,
            "rows": len(sub),
            "coverage_pct": round(100 * n / len(sub), 1) if len(sub) else UNKNOWN,
-           "same_day_pct": round(100 * float((vals == 0).mean()), 1) if n else UNKNOWN}
+           "same_day_pct": (round(100 * float((vals == 0).mean()), 1) if n >= min_n
+                            else UNKNOWN)}
     if n < min_n:
         res.update({k: UNKNOWN for k in ("P25", "P50", "P75", "P80")})
     else:

@@ -22,6 +22,18 @@ def test_headline_flags_same_day_city():
     assert "Caution: most of" not in " ".join(m.value for m in at.markdown)
 
 
+def test_headline_no_same_day_caution_below_min_n():
+    # Yorba Linda, mobile homes: 5 entitlement -> permit records, all same-day. n < MIN_N, so
+    # the share is "unknown" and the headline must not claim "most of" its records.
+    at = AppTest.from_file("app.py", default_timeout=120).run()
+    at.selectbox[0].select_index(at.selectbox[0].options.index("Yorba Linda")).run()
+    at.selectbox[2].set_value("MH").run()
+    assert not at.exception
+    text = " ".join(m.value for m in at.markdown)
+    assert "Contingency for Yorba Linda is **unknown**" in text
+    assert "Caution: most of" not in text
+
+
 def test_headline_same_day_two_cities_plural():
     # Anaheim (~72%) and Fullerton (~85%) are both above the same-day threshold.
     at = AppTest.from_file("app.py", default_timeout=120).run()

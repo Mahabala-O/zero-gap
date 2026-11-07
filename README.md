@@ -112,7 +112,7 @@ Every number we made up is labelled ASSUMPTION here and in the tool.
   so those cells show "unknown".
 - **Same-day cities** (Anaheim, Fullerton) look fast from entitlement to permit because of how
   they report. When a picked city has 50% or more same-day entitlement → permit records
-  (ASSUMPTION threshold), the Tab A headline adds a caution; do not read those cities as fastest.
+  (ASSUMPTION threshold) out of at least 30 (MIN_N; below that the share is "unknown"), the Tab A headline adds a caution; do not read those cities as fastest.
 - **Thin cells.** Affordable-only projects are too few for benchmarks, so the app uses all
   projects of a unit type. Many city × unit-type cells are "unknown".
 - **Separate draws.** Where few records hold both stages (Santa Ana: 6 for all types), the

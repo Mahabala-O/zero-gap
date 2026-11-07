@@ -160,3 +160,10 @@
 - Changed: drafts.py: `_field()` joins the city's words with single spaces (same words, same order; nothing added or removed). Applies to the static draft and the text sent to Claude. tests/test_drafts.py: new test that a multi-line name becomes one quoted line and the Objective bullet follows it.
 - Result: check.sh pass; tests 24 -> 25. Lines in the Tustin draft's Program bullet: 3 -> 1.
 - Next: (1) Some Tustin labels still start "Goal 1: Adequate Housing Supply 6th HE Cycle 1.1…" (not every name shares that lead), so the Program column is filled by the same words; consider it. (2) The peer list's category labels mix case ("ADU streamlining" vs "fees"). (3) A person should fill data/tableD_handcheck.csv.
+
+### Round 24 · 12:37 · Same-day share is "unknown" below MIN_N, so no caution from 5 records
+- Category: C (found during an E sweep: every city with Unit type = Mobile home and a 2020 start date ran with no exception)
+- Found: Yorba Linda + Mobile home: the Tab A headline said contingency was unknown (too few records) but also "Caution: most of Yorba Linda's entitlement → permit records give the same date…". `A.summary` returned same_day_pct = 100.0 from n = 5 (MIN_N = 30): a statistic from a cell below MIN_N that was not shown as "unknown".
+- Changed: analysis.py: `summary()` sets same_day_pct to "unknown" when n < min_n (docstring says so). tests/test_analysis.py: asserts same_day_pct is a number at n = 40 and "unknown" with min_n = 50. tests/test_app_headline.py: new AppTest (Yorba Linda, MH): no "Caution: most of". README.md: the same-day bullet says the caution needs at least 30 records.
+- Result: check.sh pass; tests 25 -> 26. Same-day cautions drawn from n < 30: possible -> none. Anaheim/Fullerton all-types cautions unchanged (existing tests pass).
+- Next: (1) Some Tustin labels start "Goal 1: Adequate Housing Supply 6th HE Cycle…" and fill the Program column with the same words. (2) Check other on-screen percentages (coverage_pct) for n < MIN_N. (3) A person should fill data/tableD_handcheck.csv.

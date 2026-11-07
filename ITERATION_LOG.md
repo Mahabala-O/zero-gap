@@ -356,3 +356,10 @@
 - Changed: analysis.py: new constant N_DRAWS = 5000, used as monte_carlo's default. app.py: methods text uses f"{A.N_DRAWS:,}". tests/test_app_headline.py: `test_methods_text_draw_count_matches_simulation`.
 - Result: check.sh pass; tests 47 -> 48. Hard-coded copies of the draw count: 2 -> 1.
 - Next: (1) A person should fill data/tableD_handcheck.csv and put the accuracy in the README. (2) A person should confirm .env.example holds only ANTHROPIC_API_KEY= (this round's agent was not allowed to read it). (3) Make the repo public before 14:30.
+
+### Round 52 · 13:29 · Carrying-cost caption reads the synthetic time cost from a constant tied to the deal JSON
+- Category: C (an on-screen assumption number kept as a separate hard-coded copy)
+- Found: app.py caption said "($85k time cost)" as fixed text; nothing tied it to time_costs_while_waiting = 85000 in lanes/3-fund-it/data/synthetic-example-deal.json.
+- Changed: app.py: new SYNTHETIC_TIME_COST = 85000; caption shows f"${SYNTHETIC_TIME_COST:,} time cost" ("$85,000"). tests/test_app_headline.py: `test_caption_time_cost_matches_synthetic_deal` checks the caption against the JSON value.
+- Result: check.sh pass; tests 48 -> 49. Untested hard-coded copies of the time cost on screen: 1 -> 0.
+- Next: (1) A person should fill data/tableD_handcheck.csv and put the accuracy in the README. (2) A person should confirm .env.example holds only ANTHROPIC_API_KEY=. (3) Make the repo public before 14:30. Loop stops: no new rounds after 13:30.

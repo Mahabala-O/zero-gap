@@ -377,3 +377,13 @@ def test_methods_text_draw_count_matches_simulation():
     text = " ".join(m.value for m in at.markdown)
     assert f"Monte Carlo: {A.N_DRAWS:,} draws" in text
     assert A.monte_carlo.__defaults__[0] == A.N_DRAWS
+
+
+def test_caption_time_cost_matches_synthetic_deal():
+    # The caption's time cost must be the value in the synthetic deal JSON, not a separate copy.
+    import json
+    deal = json.load(open("lanes/3-fund-it/data/synthetic-example-deal.json"))
+    time_cost = deal["cost_to_create"]["time_costs_while_waiting"]["value"]
+    at = AppTest.from_file("app.py", default_timeout=60).run()
+    cap = next(c.value for c in at.caption if "/month is derived" in c.value)
+    assert f"${time_cost:,} time cost" in cap

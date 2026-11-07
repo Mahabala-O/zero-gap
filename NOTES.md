@@ -3,6 +3,78 @@
 Written Sat Nov 7, 2026, during the exploration session. Read this, then CLAUDE.md, before writing code.
 Prototype only. Not legal, financial or lending advice.
 
+## Start here: build on API credits, then let it improve itself unattended
+
+**What is in the repo for this:**
+
+| File | What it does |
+|---|---|
+| `prompts/01-build.md` | The build prompt (6 steps). Paste it for an attended build |
+| `.claude/loop.md` | The prompt for one round. Each round does the next build step or makes one improvement (honesty, UX, function, docs) and logs it in `ITERATION_LOG.md` |
+| `docs/ux-rubric.md` | The 13-point "minimalist, function first" checklist. Rounds score screenshots against it |
+| `scripts/run_loop.sh` | The unattended loop. Each round is `claude -p` with a fresh context and a $ cap. Then `scripts/check.sh` runs: **push if it passes, revert if it fails**, so `main` always holds a working version. Stops at `STOP_AT` (default 13:30), at the total $ cap (default $40), after 3 failed rounds in a row, or when a `STOP` file appears. Never pushes after 14:20 |
+| `scripts/check.sh` | The gate: no key in tracked files, every file compiles, tests pass, and `app.py` runs top to bottom **with no API key** (Streamlit AppTest) |
+| `scripts/screenshot.py` | Captures each tab at desktop and phone width into `.ux/` for the UX review |
+| `setup/claude-settings.json` | Permission rules to copy to `.claude/settings.json`. They allow the routine dev commands, block reading `.env`, force-push and `rm -rf`, and stop Claude editing the loop and check scripts |
+
+All tested on 2026-11-07 against a dummy app, a stand-in `claude` command and a local git
+remote: a good round was pushed, a broken round was reverted, and the budget, `STOP` file and
+`STOP_AT` each ended the loop.
+
+**Steps on your laptop (about 15 minutes):**
+
+1. **Credits.** In the Claude Console (platform.claude.com), claim the event credits and create an
+   API key for the app. Optional but recommended: set a spend limit on the "Claude Code"
+   workspace (Console → workspace limits). That workspace is created when Claude Code first
+   signs in with the Console, so set the limit after step 3.
+2. **Repo and Python.**
+   ```bash
+   git clone https://github.com/Mahabala-O/zero-gap && cd zero-gap
+   python3 -m venv .venv && source .venv/bin/activate
+   pip install -r requirements.txt -r requirements-dev.txt
+   python -m playwright install chromium
+   cp .env.example .env            # then paste the app's API key into .env
+   cp setup/claude-settings.json .claude/settings.json
+   ```
+3. **Sign Claude Code in to your credits.** Run `claude`, type `/login`, and choose the
+   Anthropic Console (API billing) account. Type `/model` and pick Sonnet; it costs less than
+   Opus and is enough for this build. Exit with `/exit`.
+   - Signed in this way, **Remote Control is not available** (it needs a claude.ai plan, not
+     API keys), so you cannot steer it from your phone. You can still **watch** it: commits
+     appear on GitHub and `ITERATION_LOG.md` updates after every round.
+4. **Optional, recommended: one attended step (5–10 min).** Run `claude`, paste
+   `prompts/01-build.md` and add "Do step 1 only". Confirm the CSVs and row counts look right,
+   commit, `/exit`.
+5. **Start the unattended loop, then leave:**
+   ```bash
+   bash scripts/run_loop.sh
+   ```
+   - The defaults are `STOP_AT=1330`, `MAX_TOTAL_USD=40`, `MODEL=sonnet`,
+     `PERMISSION_MODE=auto`. Override them inline, e.g.
+     `STOP_AT=1345 MAX_TOTAL_USD=35 bash scripts/run_loop.sh`.
+   - If the preflight says auto mode is unavailable, run
+     `PERMISSION_MODE=acceptEdits bash scripts/run_loop.sh`. That mode relies on the allowlist
+     from step 2.
+   - Keep the laptop **plugged in, awake and online**. On a Mac, run it as
+     `caffeinate -i bash scripts/run_loop.sh`.
+   - To stop it early from the laptop, `touch STOP` in another terminal (it is checked between
+     rounds).
+6. **When you're back:**
+   - Read `ITERATION_LOG.md`. It is your before/after story.
+   - Run `streamlit run app.py` and click through both tabs.
+   - Check the 20 rows in `data/tableD_handcheck.csv` by hand and put the accuracy in the
+     README.
+   - Deploy to Streamlit Community Cloud, with the key in Secrets.
+   - Then do the README and video steps of the plan below.
+
+**Budget (our choices, not measurements):**
+- About $40 for the loop and the $0.25 preflight. The rest of the $100 covers the Table D
+  classification run (Haiku, estimated by the script before it sends anything), live drafts,
+  and any attended work.
+- `--max-budget-usd` is checked against Claude Code's own estimate, and spend can pass the cap
+  a little, so the defaults leave headroom.
+- Check spend anytime on the Console's Cost page.
+
 ## The decision (locked)
 
 **Build "Permit Clock", one Streamlit app with two tabs, both built on the state's own housing
@@ -152,23 +224,18 @@ count only rows that hold both dates in the same row. Redo them properly in the 
   ```
 - Python 3.11 or 3.12. `.env.example` holds only the line `ANTHROPIC_API_KEY=`.
 
-## Running Claude Code and controlling it from a phone
+## Phone control (Remote Control) vs credits
 
-- Remote Control (drive the laptop's terminal session from the Claude phone app) needs Claude
-  Code **signed in with a claude.ai Pro, Max, Ultra, Team or Enterprise plan. API keys are not
-  supported.** Source: https://code.claude.com/docs/en/remote-control ("Requirements"), checked
-  2026-11-07.
-- So split the two uses:
-  - **Claude Code itself:** sign in with your claude.ai plan (`/login`). Start it with
-    `claude --remote-control "Permit Clock"`, then scan the QR code (run `/remote-control` to
-    show it) or open the session at claude.ai/code on the phone.
-  - **The app's own Claude calls** (the Table D batch, drafts, memo): use the **event API
-    credits** through `ANTHROPIC_API_KEY` in `.env` (local) and Streamlit Secrets (deployed).
-- Don't `export ANTHROPIC_API_KEY` in the terminal that runs `claude`. Claude Code may pick the
-  key up instead of your plan login, and then Remote Control won't connect. Let the app load the
-  key from `.env` (e.g. with `python-dotenv`, or `st.secrets` when deployed).
-- The laptop must stay awake and online. Remote Control runs on the laptop; the phone only
-  steers it.
+- Remote Control (driving the laptop session from the Claude phone app) needs Claude Code signed
+  in with a claude.ai Pro, Max, Ultra, Team or Enterprise plan. **API keys are not supported.**
+  Source: https://code.claude.com/docs/en/remote-control ("Requirements"), checked 2026-11-07.
+- This plan runs Claude Code on the **event API credits**, so there is no Remote Control. Watch
+  progress on GitHub (commits and `ITERATION_LOG.md`) instead. The loop stops on its own at
+  `STOP_AT`, at the $ cap, or after 3 failed rounds.
+- If you would rather steer from your phone and use the plan's usage instead of credits: sign
+  in with `/login` using your claude.ai account and run
+  `claude --remote-control "Permit Clock"`, then use `/loop 20m` in that session (it reads
+  `.claude/loop.md`). That route has no per-round $ cap, so watch `/usage`.
 
 ## Datasets (all checked 2026-11-07)
 
@@ -235,67 +302,7 @@ dates. *Recommendation:* nonprofits should budget P80, not P50, and choose citie
 hand. Advocates and city staff should use the city's own commitments to push the slowest stage
 first.
 
-## Starter prompt for Claude Code (paste this in the terminal)
+## Starter prompt for Claude Code
 
-```
-Read CLAUDE.md and NOTES.md in this repo first. NOTES.md is the decision; follow it exactly.
-Build "Permit Clock", a Streamlit app with two tabs, solo, on main. Commit and push after
-each step and tell me when each step works.
-
-1. scripts/fetch_apr.py: page through the data.ca.gov CKAN datastore API (limit/offset,
-   sleep 1s between pages) and save:
-   - data/oc_apr_a2.csv from APR Table A2 (resource fe505d9b-8c36-42ba-ba30-08bc4f34e022),
-     CNTY_NAME = 'Orange'. Keep JURIS_NAME, YEAR, APN, JURS_TRACKING_ID, UNIT_CAT, TENURE,
-     ENT_APPROVE_DT1, BP_ISSUE_DT1, CO_ISSUE_DT1, NO_ENTITLEMENTS, NO_BUILDING_PERMITS,
-     NO_OTHER_FORMS_OF_READINESS, APPROVE_SB35 and the income-category unit counts.
-     DROP STREET_ADDRESS, STD_ADDRESS, PROJECT_NAME, NOTES, LATITUDE, LONGITUDE.
-   - data/oc_apr_tableD.csv from APR Table D (resource 37724925-2014-4646-ade8-3ba9f3ff9fb8),
-     filtering JURIS_NAME to the 34 OC cities plus ORANGE COUNTY (list the names in code; take
-     them from lanes/2-clear-it/data/oc-cities.json, uppercased).
-   - data/SOURCES.json with URLs, resource ids, pulled-at timestamp and row counts.
-   Print row counts by year (A2 should be about 54k for 2018-2025; D about 1.8k for 2025),
-   and print how many 2025 Table D rows match permit-related keywords (ADU, accessory, permit,
-   streamlin, pre-approved, objective design, fee, CUP).
-2. analysis.py (pure functions, with a small pytest file):
-   - Parse dates. Compute per-record entitlement->permit and permit->CO days from same-row
-     pairs. Then try linking across report years by (JURIS_NAME, JURS_TRACKING_ID), falling
-     back to APN; report how many links each method finds.
-   - Drop negative durations and count them. Flag 0-day entitlement->permit as "same-day".
-   - summary(city, unit_cat): n, P25/P50/P75/P80 in months, coverage %. Mark it "unknown" if
-     n < MIN_N (default 30, an ASSUMPTION).
-   - monte_carlo(city, unit_cat, start_date, monthly_cost, draws=5000, seed=42): resample
-     durations (jointly when a record has both stages, otherwise independently, labelled as an
-     assumption) and return P50/P80 dates, P50/P80 carrying cost, contingency = P80 - P50
-     cost, and each stage's share of the spread.
-3. app.py, Tab A "Plan my project": City A and City B, unit category, start date, carrying
-   cost (default $1,771/month, labelled "ASSUMPTION derived from the SYNTHETIC deal in
-   lanes/3-fund-it/data/synthetic-example-deal.json: $85k / 48 months; replace with yours").
-   Show a side-by-side P50/P80 table, a fan or bar chart, the contingency, and a one-line
-   action ("Budget $X contingency; City B is about N months faster at P80"). Show "unknown"
-   where n is too small. Add a Sources and caveats expander: the Anaheim/Fullerton same-day
-   pattern, the Huntington Beach 0-CO gap, the BackyardADU disagreement for City of Orange.
-   Footer: prototype, not legal or financial advice. Deploy to Streamlit Community Cloud
-   after this step.
-4. scripts/classify_tableD.py: keyword-filter the 2025 OC Table D rows, then send batches of
-   about 20 rows to claude-haiku-5-5 (key from .env via python-dotenv; never print it). Ask for
-   JSON per row: category (ADU streamlining | pre-approved plans | permit-time review |
-   objective standards | fees | process/CUP removal | other), status_bucket (completed |
-   ongoing | delayed | not started | unclear), target_date (ISO or null). Tell it to use
-   only the text given and answer "unclear" when the status does not say. Count tokens first
-   and print the estimated cost before running. Save data/tableD_classified.csv with the
-   source text kept, and write data/tableD_handcheck.csv with 20 random rows for me to
-   check.
-5. Tab B "City promise tracker": pick a city. Show its stage medians vs the OC best quartile;
-   its classified programs with source text, target date and an overdue flag (target date
-   before today and not completed); and the peer cities that completed the same category.
-   Add a "Draft a request" button that uses claude-haiku-5-5 to draft (never send) a short,
-   polite note quoting the city's own program text and date, cached, labelled "Draft: review
-   before use". Without an API key, show a static template.
-6. requirements.txt with pinned versions (from NOTES.md, then pip freeze), .env.example with
-   ANTHROPIC_API_KEY= only, and a README following templates/TEAM-README.md with Try it,
-   sources, real vs mocked, and where it's wrong.
-
-Rules: never invent a number, fee, deadline or statute; say "unknown". Never say a program
-caused a change, or that a city violated a law. No addresses in the UI. Get steps 1-3
-running before anything else.
-```
+The build prompt is `prompts/01-build.md` (paste it into `claude` for an attended build). The
+unattended loop prompt is `.claude/loop.md`. Edits to either take effect on the next round.

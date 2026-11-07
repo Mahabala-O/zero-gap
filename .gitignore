@@ -18,3 +18,10 @@ build/
 .next/
 .DS_Store
 *.zip
+
+# loop tooling
+logs/
+.ux/
+STOP
+.claude/last_failure.txt
+.claude/settings.local.json

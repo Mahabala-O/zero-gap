@@ -321,3 +321,10 @@
 - Changed: app.py: when fewer stages have a gap than exist, the headline adds "(the only stage that can be compared; the other is unknown or same-day)". tests/test_app_headline.py: the Brea test plus `test_tab_b_headline_no_only_stage_note_when_both_compared` (Tustin).
 - Result: check.sh pass; tests 42 -> 44. Cities with an implied two-stage ranking from one stage: 13 -> 0.
 - Next: (1) README Tab B bullet could mention the one-stage note. (2) A person should fill data/tableD_handcheck.csv and put the accuracy in the README. (3) Make the repo public before 14:30.
+
+### Round 47 · 13:19 · README describes Tab B's one-stage note
+- Category: F (Round 46 change not yet in docs)
+- Found: README "City promise tracker" bullet did not mention Round 46's note shown when only one stage has a known gap (13 of 34 cities, e.g. Brea).
+- Changed: README.md: one sentence added to the "City promise tracker" bullet, quoting the app text (app.py around line 335).
+- Result: check.sh pass; docs only, tests unchanged (44). README statements missing app behaviour: 1 -> 0.
+- Next: (1) A person should fill data/tableD_handcheck.csv and put the accuracy in the README. (2) A person should confirm .env.example holds only ANTHROPIC_API_KEY=. (3) Make the repo public before 14:30.

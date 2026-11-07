@@ -41,7 +41,9 @@ A Streamlit app with two tabs.
 - **City promise tracker.** Pick a city. For Tustin it says: "Furthest behind: Entitlement →
   permit, about 17 months behind the fastest quarter of OC cities. 29 permitting-related
   programs in its 2025 report; 14 are past their target date and not reported completed" (as of
-  2026-11-07; the overdue count is checked against today's date). Where a target is not a single date,
+  2026-11-07; the overdue count is checked against today's date). Where only one of the two
+  stages has a known gap (13 of 34 cities, e.g. Brea), the headline adds "(the only stage that
+  can be compared; the other is unknown or same-day)". Where a target is not a single date,
   the headline counts those programs as "overdue: unknown" (Costa Mesa: 17 of 17) instead of
   implying none are late; a city with no permitting programs gets only an info box. Every
   program label sits next to the city's own status text. Program names on screen are the city's

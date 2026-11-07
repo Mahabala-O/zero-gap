@@ -302,9 +302,10 @@ with tab_b:
                                  "text; not yet hand-checked." if method.startswith("claude")
                                  else "keyword match, not reviewed."))
         show = prog.sort_values(["overdue", "target_date"], ascending=[False, True])
+        labels = A.program_labels(show)
         st.dataframe(pd.DataFrame({
             "Overdue": show["overdue"],
-            "Program": show["PROGRAM_NAME"],
+            "Program": labels,
             "Category": show["category"],
             "Status": show["status_bucket"],
             "Target date": show["target_date"].fillna(U),
@@ -325,7 +326,7 @@ with tab_b:
         opts = list(show.index)
         pick = st.selectbox("Program to ask about", opts, key="draft_prog",
                             format_func=lambda i: (f"[overdue: {show.at[i, 'overdue']}] "
-                                                   f"{show.at[i, 'PROGRAM_NAME']}")[:110])
+                                                   f"{labels.at[i]}"))
         row = show.loc[pick].to_dict()
         key = api_key()
         if key and st.button("Draft with Claude", key="draft_btn"):

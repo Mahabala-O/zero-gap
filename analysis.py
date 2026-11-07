@@ -207,6 +207,30 @@ def peers_completed(prog: pd.DataFrame, city: str, category: str) -> list[str]:
     return sorted(prog.loc[m, "JURIS_NAME"].unique())
 
 
+def _clip(text, n: int) -> str:
+    t = " ".join(str(text).split()) if isinstance(text, str) else ""
+    return t if len(t) <= n else t[: n - 1].rstrip() + "…"
+
+
+def program_labels(prog: pd.DataFrame, name_len: int = 60, obj_len: int = 60) -> pd.Series:
+    """Short program labels that tell same-named rows apart.
+
+    Whitespace is collapsed. When two of a city's names look the same once shortened, the
+    label adds the start of that row's own PROGRAM_OBJECTIVE (and, if still the same,
+    shows the end of the name), so rows stay distinct.
+    """
+    out = prog["PROGRAM_NAME"].map(lambda t: _clip(t, name_len))
+    dup = out.groupby(prog["JURIS_NAME"]).transform(lambda s: s.duplicated(keep=False))
+    obj = prog["PROGRAM_OBJECTIVE"].map(lambda t: _clip(t, obj_len) or "objective unknown")
+    out[dup] = out[dup] + " — " + obj[dup]
+    # Still the same (names differ only near the end): show the end of the name instead.
+    dup = out.groupby(prog["JURIS_NAME"]).transform(lambda s: s.duplicated(keep=False))
+    tail = prog["PROGRAM_NAME"].map(lambda t: _clip(t, 10_000)).map(
+        lambda t: t if len(t) <= name_len else "…" + t[-(name_len - 1):].lstrip())
+    out[dup] = tail[dup] + " — " + obj[dup]
+    return out
+
+
 if __name__ == "__main__":
     d = add_durations(load_a2())
     print("negative durations dropped:", count_negatives(d))

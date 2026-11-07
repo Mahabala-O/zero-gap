@@ -107,3 +107,28 @@ def test_overdue_and_peers_completed():
     o = an.add_overdue(prog, "2026-11-07")
     assert o["overdue"].tolist() == ["yes", "no", an.UNKNOWN, "no", "no", "no"]
     assert an.peers_completed(prog, "x", "fees") == ["Y", "Z"]
+
+
+def test_program_labels_tell_same_named_rows_apart():
+    prog = pd.DataFrame({
+        "JURIS_NAME": ["A", "A", "A", "B"],
+        "PROGRAM_NAME": ["ADU  Program\n\na. Promote", "ADU  Program\n\na. Promote", "Fees", "Fees"],
+        "PROGRAM_OBJECTIVE": ["Update ordinance", "Update website", "Cut fees", None],
+    })
+    lab = an.program_labels(prog).tolist()
+    assert lab[0] == "ADU Program a. Promote — Update ordinance"
+    assert lab[1] == "ADU Program a. Promote — Update website"
+    assert lab[2] == "Fees" and lab[3] == "Fees"   # unique within each city: name only
+    long = an.program_labels(pd.DataFrame({"JURIS_NAME": ["A"], "PROGRAM_NAME": ["x" * 200],
+                                           "PROGRAM_OBJECTIVE": ["y"]})).iloc[0]
+    assert len(long) == 60 and long.endswith("…")
+
+
+def test_program_labels_names_differing_only_at_the_end():
+    head = "Analyze the potential of an overlay to permit homes in the "
+    prog = pd.DataFrame({"JURIS_NAME": ["A", "A"],
+                         "PROGRAM_NAME": [head + "Airport Area", head + "17th Street Area"],
+                         "PROGRAM_OBJECTIVE": ["Evaluate the overlay"] * 2})
+    lab = an.program_labels(prog)
+    assert lab.nunique() == 2
+    assert "Airport Area" in lab.iloc[0] and "17th Street Area" in lab.iloc[1]

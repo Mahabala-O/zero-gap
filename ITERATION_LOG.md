@@ -188,3 +188,10 @@
 - Changed: app.py: new `shown_contingency()` = round(P80, -2) − round(P50, -2); used in the headline and the table. tests/test_app_headline.py: new AppTest `test_tab_a_contingency_matches_shown_costs` (fails on the old code: 16800 != 33000 − 16300).
 - Result: check.sh pass; tests 28 -> 29. Cities whose contingency row does not add up: 2/15 -> 0/15. Santa Ana contingency: $16,800 -> $16,700.
 - Next: (1) The peer list's category labels mix case ("ADU streamlining" vs "fees"). (2) A person should fill data/tableD_handcheck.csv. (3) Check the Tab A chart (P80 − P50 buffer per stage) uses the same shown values as the table.
+
+### Round 28 · 12:45 · Tab A buffer chart equals the difference of the months shown in the table
+- Category: C (statistic shown inconsistently; Round 27 queue item 3)
+- Found: the default view's chart plotted unrounded P80 − P50: Santa Ana entitlement → permit bar = 10.41 months while the table shows "1.5 months / 12 months" (difference 10.5); Tustin 10.81 vs 31 − 20 = 11; Santa Ana permit → CO 1.81 vs 7.5 − 6 = 1.5. A bar was also drawn when only P80 was unknown.
+- Changed: app.py: new `half()` (nearest half month, used by `months()` and the Tab B gap); chart bars = half(P80) − half(P50), and no bar if either one is unknown. tests/test_app_headline.py: new AppTest `test_tab_a_chart_buffer_matches_shown_months` (fails on the old code, passes now).
+- Result: check.sh pass; tests 29 -> 30. Default-view bars that do not match the table: 4/4 -> 0/4.
+- Next: (1) The peer list's category labels mix case ("ADU streamlining" vs "fees"). (2) A person should fill data/tableD_handcheck.csv. (3) Check the Tab A move-in dates against the shown P50/P80 months (start + months).

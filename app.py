@@ -93,10 +93,15 @@ def programs() -> pd.DataFrame:
     return A.add_overdue(A.load_programs(), dt.date.today())
 
 
+def half(x) -> float:
+    """Months rounded to the nearest half month, as shown on screen."""
+    return round(x * 2) / 2
+
+
 def months(x) -> str:
     if x == U:
         return U
-    m = round(x * 2) / 2
+    m = half(x)
     return f"{m:g} month{'' if m == 1 else 's'}"
 
 
@@ -225,7 +230,8 @@ with tab_a:
         ys = []
         for s in STAGE_LABELS:
             sm = stage_summary(city, unit_cat, s)
-            ys.append(None if sm["P50"] == U else sm["P80"] - sm["P50"])
+            # Shown P80 minus shown P50 (half months), so a bar matches the table above it.
+            ys.append(None if U in (sm["P50"], sm["P80"]) else half(sm["P80"]) - half(sm["P50"]))
         fig.add_bar(name=f"{title(city)} ({k})", x=list(STAGE_LABELS.values()), y=ys,
                     marker_color=COLORS[k])
     fig.update_layout(title="Which stage adds the most buffer (P80 − P50)",
@@ -285,7 +291,7 @@ with tab_b:
             note = U
         else:
             # Gap = difference of the shown (half-month) values, so the row adds up on screen.
-            gaps[label] = round(sm["P50"] * 2) / 2 - round(bq * 2) / 2
+            gaps[label] = half(sm["P50"]) - half(bq)
             note = (f"{months(gaps[label])} behind" if gaps[label] >= 0.25
                     else "at or ahead")
         stage_rows.append({"Stage": label,

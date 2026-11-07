@@ -121,3 +121,23 @@ def test_tab_a_contingency_matches_shown_costs():
             continue
         p50, p80 = (money(x) for x in cost.split(" / "))
         assert money(cont) == p80 - p50, (col, cost, cont)
+
+
+def test_tab_a_chart_buffer_matches_shown_months():
+    # Default view: Santa Ana entitlement -> permit shows 1.5 / 12 months, so its bar must be
+    # 10.5 (the unrounded difference was 10.41).
+    import json
+    at = AppTest.from_file("app.py", default_timeout=120).run()
+    assert not at.exception
+    table = at.dataframe[0].value
+    spec = json.loads(at.get("plotly_chart")[0].proto.spec)
+    num = lambda s: float(s.split(" month")[0])
+    for trace in spec["data"]:
+        col = trace["name"]
+        for row, y in zip([r for r in table.index if r.endswith("P50 / P80 (n)")], trace["y"]):
+            cell = table.loc[row, col]
+            if "unknown" in cell:
+                assert y is None, (col, row, y)
+                continue
+            p50, p80 = (num(x) for x in cell.split(" (n=")[0].split(" / "))
+            assert y == p80 - p50, (col, row, cell, y)

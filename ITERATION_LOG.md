@@ -202,3 +202,10 @@
 - Changed: app.py: one caption under the Tab A table explains it (no number changed). tests/test_app_headline.py: new test `test_tab_a_move_in_p80_not_sum_of_stage_p80s_and_says_so` (simulated Tustin P80 < sum of stage P80s, and the caption is shown).
 - Result: check.sh pass; tests 30 -> 31. Move-in dates that differ from the column sum without an explanation: 2/2 default cities -> 0.
 - Next: (1) The peer list's category labels mix case ("ADU streamlining" vs "fees"). (2) A person should fill data/tableD_handcheck.csv. (3) README: mention that move-in dates come from whole simulated projects, not the sum of stage P80s.
+
+### Round 30 · 12:48 · README says move-in dates come from whole simulated projects
+- Category: F (Round 29 queue item 3)
+- Found: Round 29 added an on-screen caption that the move-in P80 is not the sum of the stage P80s; README.md's Tab A description did not say so. Checked the README's quoted default headline against AppTest output ("$16,100 … Santa Ana about 21 months faster"): still matches after rounds 26-28. Also checked: past start date already handled (app.py caption); peer category "ADU streamlining" vs "fees" case is an acronym, not a defect — left as is.
+- Changed: README.md: one sentence in the "Plan my project" bullet.
+- Result: check.sh pass; docs only, tests unchanged (31). README statements that disagree with the app: 1 -> 0.
+- Next: (1) A person should fill data/tableD_handcheck.csv and put the accuracy in the README. (2) Re-screenshot both tabs at 390 px to re-score the rubric after rounds 25-29. (3) README "real vs mocked" table: confirm rows still match.

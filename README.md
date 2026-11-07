@@ -30,7 +30,10 @@ A Streamlit app with two tabs.
   Carlo (5,000 draws) resamples real entitlement → permit → completion times from that city's
   reports. With the defaults (Tustin vs Santa Ana, all types) it says: "Budget **$16,100**
   contingency in Tustin. **Santa Ana** is about **21 months** faster than Tustin at P80." Santa
-  Ana's figure uses stages drawn separately, which is an ASSUMPTION (see below).
+  Ana's figure uses stages drawn separately, which is an ASSUMPTION (see below). Move-in dates
+  are the P50/P80 of whole simulated projects, so the P80 date is usually earlier than adding
+  the two stage P80s in the table (few projects are slow at both stages); the app says so under
+  the table.
 - **City promise tracker.** Pick a city. For Tustin it says: "Slowest stage: Entitlement →
   permit, about 17 months behind the fastest quarter of OC cities. 29 permitting-related
   programs in its 2025 report; 14 are past their target date and not reported completed." Every

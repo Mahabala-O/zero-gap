@@ -2,6 +2,10 @@
 
 Reads only the cached CSVs in data/ (no network calls on page load). See data/SOURCES.json.
 Run: streamlit run app.py
+
+Two pages, picked in the sidebar:
+  1. Where should I build?   rank every OC city by time to move-in, then compare a shortlist
+  2. How is my city doing?   one city against the county, and its own permitting promises
 """
 from __future__ import annotations
 
@@ -15,24 +19,30 @@ import plotly.graph_objects as go
 import streamlit as st
 
 import analysis as A
+import costs as C
 import drafts as D
 
-st.set_page_config(page_title="Permit Clock", layout="centered")
+st.set_page_config(page_title="Permit Clock", layout="wide", initial_sidebar_state="auto")
 
-# ASSUMPTION: $85,000 time cost from the SYNTHETIC deal in
-# lanes/3-fund-it/data/synthetic-example-deal.json, spread over 48 months (the "about four
-# years" land-to-keys in docs/background.md). Not a real figure; replace with yours.
-SYNTHETIC_TIME_COST = 85000  # time_costs_while_waiting in the synthetic deal JSON
-DEFAULT_MONTHLY_COST = 1771
-COLORS = {"A": "#1f77b4", "B": "#e8743b"}  # City A / City B, same everywhere
-STAGE_LABELS = {"ent_to_permit": "Entitlement → permit",
-                "permit_to_co": "Permit → CO"}
-UNIT_LABELS = {None: "All types", "ADU": "ADU", "SFD": "Single-family detached (SFD)",
-               "SFA": "Single-family attached (SFA)", "2 to 4": "2 to 4 units",
-               "5+": "5+ units", "MH": "Mobile home (MH)"}
 U = A.UNKNOWN
+PALETTE = ["#1f77b4", "#e8743b", "#2ca02c"]  # chosen cities, in order; same colors everywhere
+GREY = "#cfd3d8"
+STAGE_LABELS = {"ent_to_permit": "Approval → permit", "permit_to_co": "Permit → move-in"}
+PATH_LABELS = {"total": "Whole path: approval → move-in", **STAGE_LABELS}
+UNIT_LABELS = {None: "All types", "ADU": "ADU (backyard home)", "SFD": "Single-family detached",
+               "SFA": "Single-family attached (townhome)", "2 to 4": "2 to 4 units",
+               "5+": "5+ units", "MH": "Mobile home"}
 SAME_DAY_FLAG_PCT = 50  # ASSUMPTION: share of same-day rows that triggers the caution
+NOT_ENOUGH = "Not enough reported data"
+LIKELY_HELP = ("**Likely** = half of this city's past projects were finished by then. "
+               "**Plan for** = 8 in 10 were. Both come from what the city reported to the state "
+               "in 2018–2025, so they describe the past, not a promise.")
+TERMS = ("**Approval** = the city's planning approval (the entitlement). **Permit** = the "
+         "building permit. **Move-in** = the certificate of occupancy (CO), the sign-off that "
+         "people can live there.")
 
+
+# ---------- data (cached, no network) ----------
 
 @st.cache_data
 def data() -> pd.DataFrame:
@@ -45,8 +55,17 @@ def sources() -> dict:
 
 
 @st.cache_data
-def run_mc(city: str, unit_cat, start: str, cost: float) -> dict:
-    return A.monte_carlo(data(), city, unit_cat, start, cost)
+def programs(today: dt.date) -> pd.DataFrame:
+    # today is an argument so the cache key changes each day; otherwise a long-running app
+    # would keep counting "overdue" against the date it first loaded.
+    return A.add_overdue(A.load_programs(), today)
+
+
+@st.cache_data
+def mc(city: str, unit_cat, start: str) -> dict:
+    # monthly_cost=1, so r["cost"] holds months from approval to move-in; dollars are applied
+    # on screen, which keeps the cache warm when the user edits the cost calculator.
+    return A.monte_carlo(data(), city, unit_cat, start, 1.0)
 
 
 @st.cache_data
@@ -61,9 +80,41 @@ def best_q(stage: str):
 
 @st.cache_data
 def best_q_n(stage: str) -> int:
-    """How many cities the OC best quartile is computed from (n >= MIN_N, not same-day)."""
+    """How many cities the OC fastest quarter is computed from (n >= MIN_N, not same-day)."""
     peers = A.peer_medians(data(), None, stage)
     return int((~peers["same_day"]).sum())
+
+
+@st.cache_data
+def yearly(city: str | None, stage: str) -> pd.DataFrame:
+    return A.yearly_medians(data(), city, stage)
+
+
+@st.cache_data
+def rank_table(unit_cat, start: str, path: str) -> pd.DataFrame:
+    """One row per OC jurisdiction: likely and plan-for months on the chosen path, with n.
+
+    likely/plan are None where the city has fewer than MIN_N usable records (ASSUMPTION).
+    """
+    rows = []
+    for c in cities:
+        if path == "total":
+            r = mc(c, unit_cat, start)
+            known = r["co_date"]["P50"] != U
+            rows.append({"city": c, "likely": r["cost"]["P50"] if known else None,
+                         "plan": r["cost"]["P80"] if known else None,
+                         "n": f"{r['n']['ent_to_permit']} approval→permit and "
+                              f"{r['n']['permit_to_co']} permit→move-in records",
+                         "likely_date": r["co_date"]["P50"] if known else None,
+                         "plan_date": r["co_date"]["P80"] if known else None,
+                         "rough": known and r["method"] != "paired"})
+        else:
+            sm = stage_summary(c, unit_cat, path)
+            known = sm["P50"] != U
+            rows.append({"city": c, "likely": sm["P50"] if known else None,
+                         "plan": sm["P80"] if known else None, "n": f"{sm['n']} records",
+                         "likely_date": None, "plan_date": None, "rough": False})
+    return pd.DataFrame(rows)
 
 
 def api_key() -> str | None:
@@ -90,12 +141,7 @@ def live_draft(city: str, row_items: tuple) -> str:
     return D.claude_draft(city, dict(row_items), key)
 
 
-@st.cache_data
-def programs(today: dt.date) -> pd.DataFrame:
-    # today is an argument so the cache key changes each day; otherwise a long-running app
-    # would keep counting "overdue" against the date it first loaded.
-    return A.add_overdue(A.load_programs(), today)
-
+# ---------- formatting ----------
 
 def half(x) -> float:
     """Months rounded to the nearest half month, as shown on screen."""
@@ -103,179 +149,341 @@ def half(x) -> float:
 
 
 def months(x) -> str:
-    if x == U:
-        return U
+    if x is None or x == U:
+        return NOT_ENOUGH
     m = half(x)
     return f"{m:g} month{'' if m == 1 else 's'}"
 
 
-def dollars(x) -> str:
-    return U if x == U else f"${round(x, -2):,.0f}"
+def usd(x) -> str:
+    """Dollars to the nearest $100, plain (for st.metric and charts)."""
+    return f"${round(x, -2):,.0f}"
 
 
-def shown_contingency(r: dict):
-    """P80 minus P50 cost as shown on screen (each rounded to $100), so the row adds up."""
-    if r["contingency"] == U:
-        return U
-    return round(r["cost"]["P80"], -2) - round(r["cost"]["P50"], -2)
+def usd_md(x) -> str:
+    """Dollars for st.markdown, where a bare $ starts a math block."""
+    return usd(x).replace("$", "\\$")
 
 
 def date(x) -> str:
-    return U if x == U else pd.Timestamp(x).strftime("%b %Y")
+    return NOT_ENOUGH if x is None or x == U else pd.Timestamp(x).strftime("%b %Y")
 
 
 def title(city: str) -> str:
     return city.title()
 
 
+def month_gap(a, b) -> int:
+    """Whole months between two shown dates (same arithmetic as the labels on screen)."""
+    a, b = pd.Timestamp(a), pd.Timestamp(b)
+    return (a.year - b.year) * 12 + a.month - b.month
+
+
+def ms(a, b) -> float:
+    """Milliseconds from a to b, for Plotly bars on a date axis."""
+    return (pd.Timestamp(b) - pd.Timestamp(a)).total_seconds() * 1000
+
+
+def unit_phrase(unit_cat) -> str:
+    return "all unit types" if unit_cat is None else UNIT_LABELS[unit_cat]
+
+
+# ---------- charts ----------
+
+def rank_chart(tbl: pd.DataFrame, highlight: dict[str, str], path: str) -> go.Figure | None:
+    """Horizontal bars: solid = likely months, faded extension = plan-for. Fastest at the top."""
+    known = tbl.dropna(subset=["likely"]).sort_values("likely", ascending=False)
+    if known.empty:
+        return None
+    names = [title(c) + (" *" if r else "") for c, r in zip(known["city"], known["rough"])]
+    colors = [highlight.get(c, GREY) for c in known["city"]]
+    if path == "total":
+        custom = [[months(l), date(ld), months(p), date(pd_), n] for l, ld, p, pd_, n in
+                  zip(known["likely"], known["likely_date"], known["plan"], known["plan_date"],
+                      known["n"])]
+        hover = ("<b>%{y}</b><br>Likely: %{customdata[0]} (%{customdata[1]})<br>"
+                 "Plan for: %{customdata[2]} (%{customdata[3]})<br>"
+                 "Based on %{customdata[4]}<extra></extra>")
+    else:
+        custom = [[months(l), "", months(p), "", n] for l, p, n in
+                  zip(known["likely"], known["plan"], known["n"])]
+        hover = ("<b>%{y}</b><br>Likely: %{customdata[0]}<br>Plan for: %{customdata[2]}<br>"
+                 "Based on %{customdata[4]}<extra></extra>")
+    fig = go.Figure()
+    fig.add_bar(y=names, x=[half(v) for v in known["likely"]], orientation="h", name="Likely",
+                marker_color=colors, customdata=custom, hovertemplate=hover)
+    fig.add_bar(y=names, x=[half(p) - half(l) for p, l in zip(known["plan"], known["likely"])],
+                orientation="h", name="Plan for (extra)", marker_color=colors,
+                marker_opacity=0.35, customdata=custom, hovertemplate=hover)
+    fig.update_layout(barmode="stack", height=70 + 26 * len(known),
+                      margin=dict(l=10, r=10, t=10, b=10), xaxis_title="Months",
+                      showlegend=False, yaxis=dict(tickfont=dict(size=12)))
+    return fig
+
+
+def timeline_chart(sel: list[str], res: dict[str, dict], start: dt.date) -> go.Figure | None:
+    """Calendar bars per chosen city: approval → permit → move-in (likely), then plan-for."""
+    fig, any_bar = go.Figure(), False
+    for i, c in enumerate(sel):
+        r, color, name = res[c], PALETTE[i % len(PALETTE)], title(c)
+        p50 = r["permit_date"]["P50"]
+        if p50 == U:
+            fig.add_annotation(y=name, x=pd.Timestamp(start), text=f"{NOT_ENOUGH}",
+                               showarrow=False, xanchor="left", font=dict(color="#6b7280"))
+            continue
+        any_bar = True
+        fig.add_bar(y=[name], base=[pd.Timestamp(start)], x=[ms(start, p50)], orientation="h",
+                    marker_color=color, name="Approval → permit", showlegend=(i == 0),
+                    legendgroup="s1", hovertemplate=f"{name}<br>Permit likely {date(p50)}"
+                    "<extra></extra>")
+        co50, co80 = r["co_date"]["P50"], r["co_date"]["P80"]
+        if co50 == U:
+            fig.add_annotation(y=name, x=p50, text=f" permit → move-in: {NOT_ENOUGH.lower()}",
+                               showarrow=False, xanchor="left", font=dict(color="#6b7280"))
+            continue
+        fig.add_bar(y=[name], base=[p50], x=[ms(p50, co50)], orientation="h",
+                    marker_color=color, marker_pattern_shape="/", name="Permit → move-in",
+                    showlegend=(i == 0), legendgroup="s2",
+                    hovertemplate=f"{name}<br>Move-in likely {date(co50)}<extra></extra>")
+        fig.add_bar(y=[name], base=[co50], x=[ms(co50, co80)], orientation="h",
+                    marker_color=color, marker_opacity=0.35, name="Plan for (extra time)",
+                    showlegend=(i == 0), legendgroup="s3",
+                    hovertemplate=f"{name}<br>Plan for move-in by {date(co80)}<extra></extra>")
+    if not any_bar:
+        return None
+    fig.add_vline(x=pd.Timestamp(start).timestamp() * 1000, line_dash="dot", line_color="#6b7280")
+    fig.update_layout(barmode="stack", height=90 + 60 * len(sel),
+                      margin=dict(l=10, r=10, t=10, b=10), xaxis=dict(type="date", title=""),
+                      yaxis=dict(autorange="reversed"),
+                      legend=dict(orientation="h", y=1.1, x=0))
+    return fig
+
+
+def trend_chart(sel: list[str], stage: str) -> go.Figure:
+    fig = go.Figure()
+    oc = yearly(None, stage)
+    fig.add_scatter(x=oc["YEAR"], y=[half(v) if pd.notna(v) else None for v in oc["P50"]],
+                    mode="lines+markers", name="All of Orange County", line=dict(color="#111827"),
+                    customdata=oc["n"], hovertemplate="%{x}: %{y} months (n=%{customdata})"
+                    "<extra>All OC</extra>")
+    for i, c in enumerate(sel):
+        y = yearly(c, stage)
+        if y["P50"].notna().sum() == 0:
+            continue
+        fig.add_scatter(x=y["YEAR"], y=[half(v) if pd.notna(v) else None for v in y["P50"]],
+                        mode="lines+markers", name=title(c), line=dict(color=PALETTE[i % 3]),
+                        connectgaps=False, customdata=y["n"],
+                        hovertemplate="%{x}: %{y} months (n=%{customdata})<extra>" + title(c)
+                        + "</extra>")
+    fig.update_layout(height=300, margin=dict(l=10, r=10, t=10, b=10),
+                      yaxis_title="Typical months", xaxis_title="Report year",
+                      legend=dict(orientation="h", y=1.1, x=0))
+    return fig
+
+
+# ---------- plain-language notes ----------
+
+def city_notes(city: str, unit_cat, r: dict) -> list[str]:
+    """Every caveat that applies to one city's forecast, in plain words, labels included."""
+    notes = [f"Based on {r['n']['ent_to_permit']} approval → permit and "
+             f"{r['n']['permit_to_co']} permit → move-in records that {title(city)} reported "
+             f"for {unit_phrase(unit_cat)}, 2018–2025."]
+    for s, label in STAGE_LABELS.items():
+        if r["n"][s] < A.MIN_N:
+            notes.append(f"{label}: fewer than {A.MIN_N} usable records (ASSUMPTION: minimum "
+                         f"{A.MIN_N}), so it is shown as \"{NOT_ENOUGH.lower()}\". Try "
+                         "\"All types\" or another city.")
+    if r["co_date"]["P50"] != U and r["method"] != "paired":
+        notes.append(f"Only {r['n_paired']} records show both stages for the same project, so "
+                     "the two stages were combined as if independent (ASSUMPTION). Treat the "
+                     "plan-for date as rough.")
+    sd = stage_summary(city, unit_cat, "ent_to_permit")["same_day_pct"]
+    if isinstance(sd, (int, float)) and sd >= SAME_DAY_FLAG_PCT:
+        notes.append(f"Caution: {sd:.0f}% of its approval → permit records give the same date "
+                     "for both steps. That is probably how the city reports (INFERRED), not "
+                     "real speed, so its approval → permit time is likely understated.")
+    return notes
+
+
+def verdict(sel: list[str], res: dict[str, dict], cost: float | None) -> str:
+    """One short paragraph: who is fastest, by how much, and what the wait costs."""
+    known = [c for c in sel if res[c]["co_date"]["P50"] != U]
+    if not known:
+        return (f"None of the chosen cities reported enough projects to forecast "
+                f"({NOT_ENOUGH.lower()}). Try \"All types\" or pick a city from the chart above.")
+    known.sort(key=lambda c: res[c]["co_date"]["P50"])
+    first = known[0]
+    r0 = res[first]
+    parts = [f"In **{title(first)}**, people would likely move in by "
+             f"**{date(r0['co_date']['P50'])}**; plan for **{date(r0['co_date']['P80'])}** to "
+             "be safe."]
+    for c in known[1:]:
+        r = res[c]
+        gap = month_gap(r["co_date"]["P50"], r0["co_date"]["P50"])
+        parts.append(f"**{title(c)}**: likely {date(r['co_date']['P50'])}, plan for "
+                     f"{date(r['co_date']['P80'])}"
+                     + (f", about **{months(gap)} longer**." if gap > 0 else
+                        " (about the same)."))
+    rough = [title(c) for c in known if res[c]["method"] != "paired"]
+    if rough:
+        parts.append(f"Figures for {' and '.join(rough)} are rough (see \"How we got this\").")
+    for c in sel:
+        if c not in known:
+            parts.append(f"{title(c)}: {NOT_ENOUGH.lower()}.")
+    if cost:
+        parts.append("\n\n")  # money on its own line, so the dates read first
+        c0 = r0["cost"]
+        parts.append(f"At {usd_md(cost)} a month, the wait in {title(first)} costs about "
+                     f"**{usd_md(c0['P50'] * cost)}**; set aside "
+                     f"**{usd_md(c0['P80'] * cost - c0['P50'] * cost)}** more as contingency "
+                     "in case it runs to the plan-for date.")
+        for c in known[1:]:
+            extra = (res[c]["cost"]["P50"] - c0["P50"]) * cost
+            if extra >= 50:
+                parts.append(f"{title(c)} would cost about **{usd_md(extra)}** more in waiting.")
+    return " ".join(parts).replace(" \n\n ", "\n\n")
+
+
+# ---------- app ----------
+
 df = data()
 cities = sorted(df["JURIS_NAME"].dropna().unique())
 
-st.title("Permit Clock")
-st.caption("How long will a small housing project take to permit and build in an Orange County "
-           "city, and what does the uncertainty cost? From the state's own housing reports.")
+with st.sidebar:
+    st.title("Permit Clock")
+    st.caption("How long permits really take in Orange County cities, from the state's own "
+               "housing reports.")
+    page = st.radio("I want to…", ["Where should I build?", "How is my city doing?"],
+                    label_visibility="collapsed")
+    st.divider()
 
-tab_a, tab_b = st.tabs(["Plan my project", "City promise tracker"])
+if page == "Where should I build?":
+    with st.sidebar:
+        unit_cat = st.selectbox("Unit type", list(UNIT_LABELS), format_func=UNIT_LABELS.get)
+        start = st.date_input("Planning approval date", value=dt.date.today(),
+                              help="The day the city approves the project (the entitlement). "
+                                   "The forecast starts here.")
+        sel = st.multiselect("Cities to compare (up to 3)", cities, default=["TUSTIN", "SANTA ANA"],
+                             format_func=title, max_selections=3)
+        with st.expander("What a month of waiting costs you"):
+            use_cost = st.checkbox("Show costs in dollars", value=True)
+            loan = st.number_input("Acquisition loan balance ($)", min_value=0, step=10_000,
+                                   value=C.EXAMPLE["loan_balance"])
+            rate = st.number_input("Interest rate (% per year)", min_value=0.0, step=0.25,
+                                   value=C.SOURCES["interest_rate_pct"]["value"])
+            value = st.number_input("Assessed value ($)", min_value=0, step=10_000,
+                                    value=C.EXAMPLE["assessed_value"])
+            tax = st.number_input("Property tax rate (% per year)", min_value=0.0, step=0.1,
+                                  value=C.SOURCES["property_tax_pct"]["value"])
+            build = st.number_input("Construction not yet built ($)", min_value=0, step=10_000,
+                                    value=C.EXAMPLE["construction_budget"])
+            esc = st.number_input("Construction cost rise (% per year)", min_value=0.0,
+                                  step=0.5, value=C.SOURCES["escalation_pct"]["value"])
+            fixed = st.number_input("Insurance, staff, other ($ per month)", min_value=0,
+                                    step=100, value=C.EXAMPLE["fixed_monthly"])
+            parts = C.monthly_cost(loan, rate, value, tax, build, esc, fixed)
+            st.markdown(f"**≈ {usd_md(parts['total'])} per month** of waiting")
+            st.caption(", ".join(f"{k.lower()} {usd_md(v)}" for k, v in parts.items()
+                                 if k != "total"))
+            st.caption("The dollar amounts start from a made-up one-home example (ASSUMPTION, "
+                       "`lanes/3-fund-it/data/synthetic-example-deal.json`): replace them with "
+                       "your project. The rates are sourced: prime rate "
+                       f"{C.SOURCES['interest_rate_pct']['value']:.2f}% (Federal Reserve H.15 "
+                       f"via FRED, {C.SOURCES['interest_rate_pct']['observed']}); property tax "
+                       f"{C.SOURCES['property_tax_pct']['value']}% (Prop 13's 1% plus about "
+                       "0.1% voter-approved debt, Legislative Analyst's Office); construction "
+                       f"cost +{C.SOURCES['escalation_pct']['value']}%/yr (Turner Building Cost "
+                       "Index Q3 2026, national). Checked 2026-11-08. Insurance and staff have "
+                       "no public source: enter yours.")
+        cost = parts["total"] if use_cost and parts["total"] > 0 else None
 
-with tab_a:
-    c1, c2 = st.columns(2)
-    city_a = c1.selectbox("City A", cities, index=cities.index("TUSTIN"), format_func=title)
-    city_b = c2.selectbox("City B", cities, index=cities.index("SANTA ANA"), format_func=title)
-    c3, c4 = st.columns(2)
-    unit_cat = c3.selectbox("Unit type", list(UNIT_LABELS), format_func=UNIT_LABELS.get)
-    start = c4.date_input("Entitlement approval date", value=dt.date.today(),
-                          help="Entitlement = the city's planning approval for the project. "
-                               "The forecast starts here and runs to the certificate of "
-                               "occupancy (CO), the sign-off that people can move in.")
-    with st.expander("Carrying cost per month (ASSUMPTION)"):
-        cost = st.number_input("Carrying cost, $ per month", min_value=0, step=100,
-                               value=DEFAULT_MONTHLY_COST)
-        st.caption(f"ASSUMPTION: \\${DEFAULT_MONTHLY_COST:,}/month is derived from the SYNTHETIC deal in "
-                   f"lanes/3-fund-it/data/synthetic-example-deal.json (\\${SYNTHETIC_TIME_COST:,} time cost) spread over "
-                   "48 months (the \"about four years\" in docs/background.md). "
-                   "It is not a real figure; replace it with yours.")
+    st.header("Where should I build?")
+    st.caption(f"Time from planning approval to move-in for {unit_phrase(unit_cat)}, if approval "
+               f"came on {start:%b %d, %Y}. Hover a bar for dates and sample size.", help=TERMS)
 
-    picks = {"A": city_a, "B": city_b}
-    res = {k: run_mc(c, unit_cat, start.isoformat(), float(cost)) for k, c in picks.items()}
-
-    # Headline: contingency for City A, then which city is faster at P80 (move-in date).
-    ra, rb = res["A"], res["B"]
-    parts = []
-    if ra["contingency"] != U and cost == 0:
-        # "$0 contingency" would read as "no time risk"; the time gap still exists.
-        parts.append("Contingency is **\\$0** only because carrying cost is set to \\$0/month: "
-                     "enter your monthly cost to price the delay.")
-    elif ra["contingency"] != U:
-        parts.append(f"Budget **{dollars(shown_contingency(ra))}** contingency in "
-                     f"{title(city_a)} (P80 minus P50 carrying cost, ASSUMPTION cost/month).")
-    else:
-        parts.append(f"Contingency for {title(city_a)} is **unknown**: too few records.")
-    if ra["co_date"]["P80"] != U and rb["co_date"]["P80"] != U and city_a != city_b:
-        # Gap = difference of the shown move-in months, so it matches the table's dates.
-        pa, pb = pd.Timestamp(ra["co_date"]["P80"]), pd.Timestamp(rb["co_date"]["P80"])
-        gap = (pa.year - pb.year) * 12 + pa.month - pb.month
-        if gap == 0:
-            parts.append("The two cities are about the same at P80.")
-        else:
-            fast, slow = (city_b, city_a) if gap > 0 else (city_a, city_b)
-            parts.append(f"**{title(fast)}** is about **{months(abs(gap))}** faster than "
-                         f"{title(slow)} at P80.")
-    elif city_a != city_b:
-        parts.append("Which city is faster is **unknown** for this unit type.")
-    if city_a == city_b:
-        # Without this, the comparison sentence just disappears with no reason given.
-        parts.append("City A and City B are the same city: pick a different City B to compare.")
-    sep = [title(c) for k, c in picks.items()
-           if res[k]["method"] != "paired" and res[k]["co_date"]["P80"] != U]
-    sep = list(dict.fromkeys(sep))
-    if sep:
-        its = "its" if len(sep) == 1 else "their"
-        parts.append(f"ASSUMPTION: too few records hold both stages for "
-                     f"{' and '.join(sep)}, so {its} stages were drawn separately; "
-                     f"treat {its} P80 as rough.")
-    # ASSUMPTION: 50% threshold. Above it, a city's entitlement -> permit times mostly come
-    # from rows where both dates are the same day (likely a reporting pattern, INFERRED).
-    same = [title(c) for c in dict.fromkeys(picks.values())
-            if isinstance(sd := stage_summary(c, unit_cat, "ent_to_permit")["same_day_pct"],
-                          (int, float)) and sd >= SAME_DAY_FLAG_PCT]
-    if same:
-        whose = f"{same[0]}'s" if len(same) == 1 else f"{' and '.join(same)}'s each"
-        its = "its" if len(same) == 1 else "their"
-        parts.append(f"Caution: most of {whose} entitlement → permit records "
-                     "give the same date for both (likely a reporting pattern, INFERRED), so "
-                     f"{its} speed there may be overstated.")
-    st.markdown(" ".join(parts))
-    st.caption("P50 = half of past projects finished by then (likely). "
-               "P80 = 80% finished by then (safe to plan). Past performance, not a promise.")
-
-    # Small table: one column per city.
-    rows = {}
-    for k, city in picks.items():
-        r = res[k]
-        col = {}
-        for s, label in STAGE_LABELS.items():
-            sm = stage_summary(city, unit_cat, s)
-            col[f"{label}, P50 / P80 (n)"] = (
-                f"{months(sm['P50'])} / {months(sm['P80'])} (n={sm['n']})")
-        col["Move-in (CO) date, P50 / P80"] = (
-            f"{date(r['co_date']['P50'])} / {date(r['co_date']['P80'])}")
-        col["Carrying cost, P50 / P80"] = f"{dollars(r['cost']['P50'])} / {dollars(r['cost']['P80'])}"
-        col["Contingency (P80 − P50)"] = dollars(shown_contingency(r))
-        col["Method"] = ("stages drawn together" if r["method"] == "paired"
-                         else "stages drawn separately (ASSUMPTION)")
-        rows[f"{title(city)} ({k})"] = col
-    # st.table wraps text, so City B's column stays on screen at phone width
-    # (st.dataframe scrolled it off the right edge at 390 px).
-    st.table(pd.DataFrame(rows))
-    st.caption("Move-in dates come from whole simulated projects, so the P80 date is usually "
-               "earlier than adding the two stage P80s: few projects are slow at both stages.")
-
-    # Dead-end help: say why it is unknown and what to try.
-    for k, city in picks.items():
-        unknown = [STAGE_LABELS[s] for s in STAGE_LABELS
-                   if stage_summary(city, unit_cat, s)["P50"] == U]
-        if unknown:
-            st.info(f"{title(city)} reported fewer than {A.MIN_N} usable records for "
-                    f"{' and '.join(unknown)} ({UNIT_LABELS[unit_cat]}), so it shows "
-                    f"\"unknown\" (ASSUMPTION: minimum n = {A.MIN_N}). Try \"All types\" or "
-                    "another city.")
-    if start < dt.date.today():
-        st.caption("Your start date is in the past; dates are still counted from it.")
-
-    # One chart: which stage adds the most planning buffer (P80 - P50), per city.
-    fig, any_bar = go.Figure(), False
-    for k, city in picks.items():
-        ys = []
-        for s in STAGE_LABELS:
-            sm = stage_summary(city, unit_cat, s)
-            # Shown P80 minus shown P50 (half months), so a bar matches the table above it.
-            ys.append(None if U in (sm["P50"], sm["P80"]) else half(sm["P80"]) - half(sm["P50"]))
-        any_bar = any_bar or any(y is not None for y in ys)
-        fig.add_bar(name=f"{title(city)} ({k})", x=list(STAGE_LABELS.values()), y=ys,
-                    marker_color=COLORS[k])
-    if any_bar:
-        # Title as Streamlit text, not a Plotly title: Plotly clips long titles at phone width.
-        st.markdown("**Which stage adds the most buffer (P80 − P50)**")
-        fig.update_layout(yaxis_title="Extra months to plan for", xaxis_title="Stage",
-                          barmode="group", height=320, margin=dict(l=10, r=10, t=10, b=10),
-                          legend=dict(orientation="h", y=-0.3))
+    # 1. Every city, ranked.
+    path = st.radio("Show", list(PATH_LABELS), format_func=PATH_LABELS.get, horizontal=True,
+                    label_visibility="collapsed")
+    tbl = rank_table(unit_cat, start.isoformat(), path)
+    highlight = {c: PALETTE[i % 3] for i, c in enumerate(sel)}
+    fig = rank_chart(tbl, highlight, path)
+    if fig is not None:
         st.plotly_chart(fig, use_container_width=True)
+        rough = tbl[tbl["rough"] & tbl["likely"].notna()]
+        st.caption("Solid bar = likely (half of past projects done by then). Faded bar = plan "
+                   "for (8 in 10 done by then)."
+                   + (" * = stages combined as if independent because few records show both "
+                      "(ASSUMPTION); treat as rough." if len(rough) else ""), help=LIKELY_HELP)
     else:
-        # An empty plot looks like "zero buffer"; say it is unknown instead.
-        st.caption("No buffer chart: every stage is unknown for both cities at this unit type.")
+        st.info(f"No city reported {A.MIN_N} or more {unit_phrase(unit_cat)} projects on this "
+                "path. Try \"All types\".")
+    missing = tbl[tbl["likely"].isna()]["city"].map(title).tolist()
+    if missing:
+        st.caption(f"{NOT_ENOUGH} (fewer than {A.MIN_N} usable records, ASSUMPTION): "
+                   + ", ".join(missing) + ".")
 
-    with st.expander("Sources and caveats"):
+    # 2. The shortlist.
+    st.subheader("Your shortlist")
+    if not sel:
+        st.info("Pick up to three cities in the sidebar to compare them side by side.")
+    else:
+        res = {c: mc(c, unit_cat, start.isoformat()) for c in sel}
+        st.markdown(verdict(sel, res, cost))
+        tl = timeline_chart(sel, res, start)
+        if tl is not None:
+            st.plotly_chart(tl, use_container_width=True)
+        cols = st.columns(len(sel))
+        for i, c in enumerate(sel):
+            r = res[c]
+            with cols[i]:
+                st.markdown(f"<span style='color:{PALETTE[i % 3]};font-size:1.3em'>●</span> "
+                            f"**{title(c)}**", unsafe_allow_html=True)
+                st.metric("Move-in, likely", date(r["co_date"]["P50"]), help=LIKELY_HELP)
+                st.metric("Move-in, plan for", date(r["co_date"]["P80"]))
+                if cost and r["co_date"]["P50"] != U:
+                    st.metric("Cost of waiting, likely", usd(r["cost"]["P50"] * cost),
+                              help="Months from approval to move-in × your cost per month.")
+                    st.metric("Contingency to set aside",
+                              usd(r["cost"]["P80"] * cost - r["cost"]["P50"] * cost),
+                              help="The extra cost if the project runs to the plan-for date "
+                                   "instead of the likely one.")
+                for s, label in STAGE_LABELS.items():
+                    sm = stage_summary(c, unit_cat, s)
+                    st.caption(f"{label}: likely {months(sm['P50'])}"
+                               + (f", plan for {months(sm['P80'])} (n={sm['n']})"
+                                  if sm["P50"] != U else f" (n={sm['n']})"))
+                with st.expander("How we got this"):
+                    for note in city_notes(c, unit_cat, r):
+                        st.markdown(f"- {note}")
+        if start < dt.date.today():
+            st.caption("Your approval date is in the past; dates are still counted from it.")
+
+        # 3. Direction of travel.
+        st.subheader("Is it getting faster?")
+        stage_t = st.radio("Stage", list(STAGE_LABELS), format_func=STAGE_LABELS.get,
+                           horizontal=True, label_visibility="collapsed", key="trend_stage",
+                           index=1)
+        st.plotly_chart(trend_chart(sel, stage_t), use_container_width=True)
+        st.caption(f"Typical (median) months by the year the project was reported. A city's line "
+                   f"has a gap where it reported fewer than {A.MIN_N} projects that year "
+                   "(ASSUMPTION). Reports, not reality: cities that report entitlement and "
+                   "permit on the same day look fast.")
+
+    with st.expander("Sources and method"):
         src = sources()
         t = src["tables"]["oc_apr_a2.csv"]
         st.markdown(
             f"- **Data:** {t['name']}, {src['publisher']}. Resource `{t['resource_id']}`, "
             f"filter {t['filter']}, {t['rows']:,} rows, pulled {src['pulled_at_utc'][:10]}. "
-            f"[API link]({t['url']})\n"
-            "- Durations use only records that report both dates in the same row. "
-            f"Cells with fewer than {A.MIN_N} records show \"unknown\" (ASSUMPTION threshold).\n"
-            f"- Monte Carlo: {A.N_DRAWS:,} draws from that city's past records. When fewer than "
-            f"{A.MIN_N} records hold both stages, the stages are drawn separately "
-            "(ASSUMPTION: independent).")
+            f"[API link]({t['url']}). Addresses, names and coordinates were dropped.\n"
+            f"- {TERMS}\n"
+            "- Durations use only records that report both dates in the same row. Cities with "
+            f"fewer than {A.MIN_N} such records show \"{NOT_ENOUGH.lower()}\" (ASSUMPTION).\n"
+            f"- Forecast: {A.N_DRAWS:,} random draws from that city's past projects, starting "
+            "from your approval date. Where fewer than "
+            f"{A.MIN_N} records hold both stages, the stages are drawn separately (ASSUMPTION: "
+            "independent) and marked *.\n"
+            "- Likely = the middle outcome (50th percentile). Plan for = the 80th percentile.")
         ana = stage_summary("ANAHEIM", None, "ent_to_permit")
         ful = stage_summary("FULLERTON", None, "ent_to_permit")
         hb = stage_summary("HUNTINGTON BEACH", None, "permit_to_co")
@@ -283,103 +491,134 @@ with tab_a:
         org_days = U if org["P50"] == U else f"{org['P50'] * A.DAYS_PER_MONTH:.0f} days"
         st.markdown(
             f"- **Same-day pattern:** Anaheim ({ana['same_day_pct']}% of n={ana['n']}) and "
-            f"Fullerton ({ful['same_day_pct']}% of n={ful['n']}) report the entitlement date "
-            "equal to the permit date. This is probably how they report (INFERRED, not "
-            "confirmed), so a short entitlement → permit time there is not proof of speed.\n"
-            f"- **Huntington Beach:** {hb['n']} usable permit → CO records out of {hb['rows']:,} "
-            "rows; its completion dates are largely missing.\n"
-            f"- **Sources disagree (City of Orange ADUs, permit → CO):** our median is "
+            f"Fullerton ({ful['same_day_pct']}% of n={ful['n']}) report the approval date "
+            "equal to the permit date. Probably how they report (INFERRED, not confirmed), so "
+            "a short approval → permit time there is not proof of speed.\n"
+            f"- **Huntington Beach:** {hb['n']} usable permit → move-in records out of "
+            f"{hb['rows']:,} rows; its completion dates are largely missing.\n"
+            f"- **Sources disagree (City of Orange ADUs, permit → move-in):** our median is "
             f"{org_days} (n={org['n']}). BackyardADU.net gives 263 days "
             "(https://backyardadu.net/data/build_times.csv, third party, checked 2026-11-07). "
-            "Cite the APR for anything official.")
+            "Cite the APR for anything official.\n"
+            "- **Cost of waiting:** see the calculator in the sidebar for every rate and its "
+            "source. Dollar defaults are a made-up example (ASSUMPTION).")
         st.caption("Association, not cause: these numbers describe past reports and do not "
                    "explain why a city is faster or slower.")
 
-with tab_b:
+else:
     prog_all = programs(dt.date.today())
     b_cities = sorted(set(prog_all["JURIS_NAME"]) | set(cities))
-    city = st.selectbox("City", b_cities, index=b_cities.index("TUSTIN"), format_func=title,
-                        key="city_b_tab")
+    with st.sidebar:
+        city = st.selectbox("City", b_cities, index=b_cities.index("TUSTIN"), format_func=title)
     prog = prog_all[prog_all["JURIS_NAME"] == city]
-
-    # Stage medians vs the OC best quartile (all unit types).
-    stage_rows, gaps = [], {}
-    for s, label in STAGE_LABELS.items():
-        sm = stage_summary(city, None, s)
-        bq = best_q(s)
-        if sm["P50"] == U:
-            note = f"unknown (n={sm['n']}, below {A.MIN_N})"
-        elif sm["P50"] == 0:
-            note = "same-day (reporting pattern? INFERRED)"
-        elif bq == U:
-            note = U
-        else:
-            # Gap = difference of the shown (half-month) values, so the row adds up on screen.
-            gaps[label] = half(sm["P50"]) - half(bq)
-            note = (f"{months(gaps[label])} behind" if gaps[label] >= 0.25
-                    else "at or ahead")
-        stage_rows.append({"Stage": label,
-                           f"{title(city)} median (n)": f"{months(sm['P50'])} (n={sm['n']})",
-                           "OC best quartile (n)": (U if bq == U else
-                                                    f"{months(bq)} ({best_q_n(s)} cities)"),
-                           "Gap": note})
-
     n_prog = len(prog)
     n_over = int((prog["overdue"] == "yes").sum())
-    head = []
-    if gaps:
-        slow = max(gaps, key=gaps.get)
-        if gaps[slow] >= 0.25:
-            # "Furthest behind", not "slowest": the largest gap to the benchmark need not be
-            # the stage that takes the longest in absolute months.
-            head.append(f"Furthest behind: **{slow}**, about **{months(gaps[slow])}** behind the "
-                        "fastest quarter of OC cities"
-                        # With one comparable stage, "furthest behind" would imply a ranking.
-                        + (" (the only stage that can be compared; the other is unknown or "
-                           "same-day)." if len(gaps) < len(STAGE_LABELS) else "."))
-        else:
-            head.append(f"{title(city)} is at or ahead of the fastest quarter of OC cities "
-                        + ("on the only stage that can be compared (the other is unknown or "
-                           "same-day)." if len(gaps) < len(STAGE_LABELS)
-                           else "on both stages."))
-    else:
-        head.append("How this city compares on stage times is **unknown** (too few records "
-                    "or same-day reporting).")
     n_unk = int((prog["overdue"] == "unknown").sum())
-    # With no programs, the info box below says so; "0 are past their target date" adds nothing.
-    if n_prog:
-        head.append(f"**{n_prog}** permitting-related programs in its 2025 report; "
-                    f"**{n_over}** {'is' if n_over == 1 else 'are'} past their target date and "
-                    "not reported completed"
-                    # Without this, a city whose targets are all non-dates reads as "0 overdue".
-                    + (f"; for **{n_unk}**, whether they are overdue is **unknown** (the target "
-                       "is not a single date)." if n_unk else "."))
-    st.markdown(" ".join(head))
-    # st.table wraps text, so the benchmark column stays on screen at phone width
-    # (st.dataframe scrolled it off the right edge at 390 px).
-    st.table(pd.DataFrame(stage_rows).set_index("Stage"))
-    st.caption("CO = certificate of occupancy, the sign-off that people can move in. "
-               "Medians use all unit types and same-row date pairs. Best quartile = 25th "
-               f"percentile of city medians among cities with n ≥ {A.MIN_N}, leaving out "
-               "same-day (median 0) cities (ASSUMPTION: reporting pattern, not speed).")
 
+    st.header(f"How is {title(city)} doing?")
+    st.caption("Its typical permit times against the fastest quarter of Orange County cities, "
+               "and the permitting promises in its own 2025 housing report.", help=TERMS)
+
+    # 1. Three tiles.
+    gaps = {}
+    tiles = st.columns(3)
+    for col, (s, label) in zip(tiles, STAGE_LABELS.items()):
+        sm = stage_summary(city, None, s)
+        bq = best_q(s)
+        with col:
+            if sm["P50"] == U:
+                st.metric(label, NOT_ENOUGH, help=f"{sm['n']} usable records, below {A.MIN_N} "
+                          "(ASSUMPTION: minimum sample).")
+            elif sm["P50"] == 0:
+                st.metric(label, "Same day", help="Most records give the same date for both "
+                          "steps: probably a reporting pattern (INFERRED), not speed.")
+            elif bq == U:
+                st.metric(label, months(sm["P50"]), help=f"Typical (median) of n={sm['n']}. No "
+                          "county benchmark for this stage.")
+            else:
+                gaps[label] = half(sm["P50"]) - half(bq)
+                behind = gaps[label] >= 0.25
+                st.metric(label, months(sm["P50"]),
+                          delta=(f"+{months(gaps[label])} vs fastest quarter"
+                                 if behind else "At or ahead of fastest quarter"),
+                          delta_color="inverse" if behind else "normal",
+                          help=f"Typical (median) of n={sm['n']} records, all unit types. "
+                               f"Fastest quarter of OC cities = {months(bq)} "
+                               f"({best_q_n(s)} cities with n ≥ {A.MIN_N}; same-day cities "
+                               "left out, ASSUMPTION).")
+    with tiles[2]:
+        if n_prog:
+            st.metric("Permitting promises overdue", f"{n_over} of {n_prog}",
+                      delta=(f"{n_unk} more have no single target date" if n_unk else None),
+                      delta_color="off",
+                      help="Programs in the city's 2025 annual report that touch permitting. "
+                           "Overdue = target date before today and not reported completed.")
+        else:
+            st.metric("Permitting promises", "None found",
+                      help="No permitting-related programs in the 2025 Table D extract.")
+
+    # 2. Rank among OC cities.
+    st.subheader(f"Where {title(city)} sits among Orange County cities")
+    path = st.radio("Show", list(PATH_LABELS), format_func=PATH_LABELS.get, horizontal=True,
+                    label_visibility="collapsed", key="rank_path_b")
+    tbl = rank_table(None, dt.date.today().isoformat(), path)
+    fig = rank_chart(tbl, {city: PALETTE[0]}, path)
+    if fig is not None:
+        st.plotly_chart(fig, use_container_width=True)
+        st.caption("Solid bar = likely (half of past projects done by then). Faded bar = plan for "
+                   "(8 in 10 done by then). All unit types, 2018–2025.", help=LIKELY_HELP)
+    row = tbl[tbl["city"] == city].iloc[0]
+    if row["likely"] is None or pd.isna(row["likely"]):
+        st.caption(f"{title(city)} is not on the chart: {NOT_ENOUGH.lower()} on this path "
+                   f"({row['n']}).")
+
+    # 3. Promises.
+    st.subheader("Its permitting promises")
     if n_prog:
+        status_word = pd.Series("Due later", index=prog.index)
+        status_word[prog["status_bucket"] == "completed"] = "Done"
+        status_word[prog["overdue"] == "yes"] = "Overdue"
+        status_word[(prog["overdue"] == "unknown") & (prog["status_bucket"] != "completed")] = \
+            "No single target date"
+        counts = status_word.value_counts()
+        order = [s for s in ["Overdue", "Due later", "No single target date", "Done"]
+                 if s in counts.index]
+        choice = st.radio("Show", ["All"] + [f"{s} ({counts[s]})" for s in order],
+                          horizontal=True, label_visibility="collapsed", key="prog_filter",
+                          index=1 if "Overdue" in order else 0)
+        cats = sorted(prog["category"].unique())
+        cat_pick = st.selectbox("Type of promise", [None] + cats,
+                                format_func=lambda c: "All types" if c is None
+                                else c[:1].upper() + c[1:])
+        keep = prog["category"].notna() if cat_pick is None else prog["category"] == cat_pick
+        if choice != "All":
+            keep &= status_word == choice.rsplit(" (", 1)[0]
+        show = prog[keep].sort_values(["overdue", "target_date"], ascending=[False, True])
+        labels = A.program_labels(prog, name_len=90, obj_len=70)
         method = prog["method"].iloc[0]
-        st.caption("Labels: " + ("Claude Haiku (claude-haiku-5-5), read from the city's own "
-                                 "text; not yet hand-checked." if method.startswith("claude")
-                                 else "keyword match, not reviewed."))
-        show = prog.sort_values(["overdue", "target_date"], ascending=[False, True])
-        labels = A.program_labels(show)
-        st.dataframe(pd.DataFrame({
-            "Overdue": show["overdue"],
-            "Target date": show["target_date"].fillna(U),
-            "Program": labels,
-            "Status": show["status_bucket"],
-            "Category": show["category"],
-            "City's own status text": show["PROGRAM_STATUS"],
-        }), use_container_width=True, hide_index=True,
-            # Wide Program column so the label (and its objective snippet) is readable at 1280 px.
-            column_config={"Program": st.column_config.TextColumn(width="large")})
+        st.caption("Labels and status were read from the city's own text by "
+                   + ("Claude Haiku (claude-haiku-5-5) and are not yet hand-checked"
+                      if method.startswith("claude") else "a keyword match, not reviewed")
+                   + ". Every card shows the city's own words: trust those first.")
+        if show.empty:
+            st.info("No promises match this filter.")
+        card_cols = st.columns(2)
+        for k, (i, p) in enumerate(show.iterrows()):
+            with card_cols[k % 2], st.container(border=True):
+                word = status_word[i]
+                dot = {"Overdue": "#d62728", "Due later": "#e8a33b", "Done": "#2ca02c"}.get(
+                    word, "#9ca3af")
+                st.markdown(f"<span style='color:{dot}'>●</span> **{labels[i]}**",
+                            unsafe_allow_html=True)
+                tgt = p["target_date"] if isinstance(p["target_date"], str) else "no single date"
+                st.caption(f"{word} · target {tgt} · "
+                           f"{p['category'][:1].upper() + p['category'][1:]} · city reports "
+                           f"\"{p['status_bucket']}\"")
+                with st.expander("The city's own words"):
+                    st.markdown(f"**Program:** {p['PROGRAM_NAME']}")
+                    st.markdown(f"**Objective:** {p['PROGRAM_OBJECTIVE']}")
+                    st.markdown(f"**Status reported:** {p['PROGRAM_STATUS']}")
+
         open_cats = sorted(set(prog.loc[prog["status_bucket"] != "completed", "category"])
                            - {"other"})
         lines = []
@@ -389,15 +628,19 @@ with tab_b:
             lines.append(f"- **{label}:** " + (", ".join(title(p) for p in peers) if peers
                                                 else "none reported completed"))
         if lines:
-            st.markdown("**Peers that report completing the same kind of program** "
-                        "(where this city's is not completed):\n" + "\n".join(lines))
+            with st.expander("Other OC cities that report finishing the same kind of promise"):
+                st.markdown("\n".join(lines))
+                st.caption("Self-reported by each city. Finishing a program does not show it "
+                           "made that city faster.")
 
-        st.markdown("**Draft a request** (never sent: copy, review and edit it yourself)")
-        opts = list(show.index)
-        pick = st.selectbox("Program to ask about", opts, key="draft_prog",
-                            format_func=lambda i: (f"[overdue: {show.at[i, 'overdue']}] "
-                                                   f"{labels.at[i]}"))
-        row = show.loc[pick].to_dict()
+        # 4. Draft a request (never sent).
+        st.subheader("Ask the city about one")
+        st.caption("A polite note quoting the city's own promise. Nothing is sent: copy, review "
+                   "and edit it yourself.")
+        opts = list(show.index) if not show.empty else list(prog.index)
+        pick = st.selectbox("Promise to ask about", opts, key="draft_prog",
+                            format_func=lambda i: f"[{status_word[i]}] {labels[i]}")
+        row = prog.loc[pick].to_dict()
         key = api_key()
         if key and st.button("Draft with Claude", key="draft_btn"):
             try:
@@ -411,7 +654,7 @@ with tab_b:
             label = "Draft: review before use (Claude Haiku, claude-haiku-5-5)"
             text, src = saved[2], "claude"
         else:
-            label = ("Draft: review before use (static template; "
+            label = ("Draft: review before use (template; "
                      + ("click the button for a Claude draft)" if key
                         else "live drafting unavailable: no API key set)"))
             text, src = D.static_template(title(city), row), "template"
@@ -420,18 +663,20 @@ with tab_b:
         st.info(f"No permitting-related programs found for {title(city)} in the 2025 Table D "
                 "extract. Try another city.")
 
-    with st.expander("Sources and caveats"):
+    with st.expander("Sources and method"):
         src = sources()
         td = src["tables"]["oc_apr_tableD.csv"]
         st.markdown(
-            f"- **Programs:** {td['name']}, {src['publisher']}. Resource `{td['resource_id']}`, "
+            f"- **Promises:** {td['name']}, {src['publisher']}. Resource `{td['resource_id']}`, "
             f"2025 report year, keyword-filtered to permitting topics, pulled "
             f"{src['pulled_at_utc'][:10]}. [API link]({td['url']})\n"
-            "- **Overdue** = target date before today and status not \"completed\". "
-            "\"unknown\" when the target is not a single date. Status labels can be wrong: "
-            "read the city's own text beside each row.\n"
-            "- **Stage times:** APR Table A2 (see the Plan my project tab).")
-        st.caption("Association, not cause: a program's status does not show it caused a "
-                   "city to be faster or slower. Nothing here says a city broke a law.")
+            "- **Overdue** = target date before today and status not \"completed\". \"No single "
+            "target date\" when the target is a range or missing. Status labels can be wrong: "
+            "read the city's own words on each card.\n"
+            "- **Stage times:** APR Table A2, same-row date pairs, all unit types (see the "
+            "\"Where should I build?\" page). Fastest quarter = 25th percentile of city medians "
+            f"among cities with n ≥ {A.MIN_N}, leaving out same-day cities (ASSUMPTION).")
+        st.caption("Association, not cause: a promise's status does not show it made a city "
+                   "faster or slower. Nothing here says a city broke a law.")
 
 st.caption("Prototype. Not legal, financial or lending advice. Check decisions with a professional.")

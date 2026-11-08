@@ -370,3 +370,10 @@
 - Changed: ITERATION_LOG.md only. No app or test changes, so nothing new can break before submission.
 - Result: check.sh pass; tests 49 -> 49.
 - Next (for people, before 14:30): (1) Fill data/tableD_handcheck.csv and put the accuracy in the README. (2) Confirm .env.example holds only ANTHROPIC_API_KEY=. (3) Check history for keys and personal information, then make the repo public.
+
+## Redesign · 2026-11-08 (attended, branch `redesign`)
+
+- Found: the headline sentence carried every caveat ("P80 minus P50", "ASSUMPTION: stages drawn separately"), so a first-time user could not tell what the tool said or what to do with it. Two cities only; one chart; promises in a truncated six-column grid.
+- Changed: app.py rewritten. Two pages in the sidebar ("Where should I build?", "How is my city doing?"), wide layout. P50/P80 became "likely" and "plan for" with one tooltip. Every OC city ranked (solid = likely, faded = plan for), a calendar timeline for up to three cities, a plain verdict with the money on its own line, per-city "How we got this" expanders holding the ASSUMPTION/INFERRED notes, and a year trend. City page: three tiles, the ranking with the city highlighted, promises as filterable cards showing the city's own words, the draft. New costs.py: carrying-cost calculator with sourced rates (prime, Prop 13, Turner BCI) and example dollar amounts (ASSUMPTION). analysis.py: yearly_medians. tests/test_app_headline.py replaced by tests/test_app.py (20 tests). scripts/screenshot.py drives the sidebar pages. .streamlit/config.toml sets the accent color.
+- Result: check.sh pass; tests 49 -> 39 (30 headline-wording tests replaced by 20). "P50"/"P80" on screen: many -> 0 (tested).
+- Next: (1) hand-check data/tableD_handcheck.csv; (2) fix or remove .github/workflows/pylint.yml (fails: no requirements installed, Python 3.8–3.10); (3) merge to main and confirm the Streamlit Cloud deploy.

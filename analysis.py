@@ -176,6 +176,20 @@ def peer_medians(df: pd.DataFrame, unit_cat: str | None, stage: str,
     return out
 
 
+def yearly_medians(df: pd.DataFrame, city: str | None, stage: str,
+                   min_n: int = MIN_N) -> pd.DataFrame:
+    """Median months per report YEAR for one stage; city None means all of OC.
+
+    Columns: YEAR, n, P50. P50 is NaN where that year's n is below min_n (shown as a gap, not
+    a point). Uses same-row date pairs; a project is counted in the year it was reported.
+    """
+    sub = df if city is None else df[df["JURIS_NAME"].str.upper() == city.upper()]
+    g = sub.dropna(subset=[stage + "_days"]).groupby("YEAR")[stage + "_days"]
+    out = pd.DataFrame({"n": g.size(), "P50": g.median() / DAYS_PER_MONTH}).reset_index()
+    out.loc[out["n"] < min_n, "P50"] = np.nan
+    return out.sort_values("YEAR").reset_index(drop=True)
+
+
 def best_quartile(peers: pd.DataFrame) -> float | str:
     """25th percentile of city medians, leaving out same-day (median 0) cities.
 

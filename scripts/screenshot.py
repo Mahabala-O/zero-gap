@@ -1,6 +1,6 @@
 """Take screenshots of the running app for the UX review (see docs/ux-rubric.md).
 
-Starts `streamlit run app.py` on a spare port with no API key, captures every tab at desktop
+Starts `streamlit run app.py` on a spare port with no API key, captures every page at desktop
 (1280x800) and phone (390x844) width, saves PNGs in .ux/, prints their paths, then stops the
 server.
 
@@ -45,7 +45,7 @@ def settle(page):
     page.wait_for_timeout(1000)
 
 
-def content_height(page, minimum, cap=8000):
+def content_height(page, minimum, cap=12000):
     """Height of the content inside Streamlit's scrolling container, capped."""
     js = """() => {
         const sels = ['[data-testid="stMain"]', '[data-testid="stAppViewContainer"]', 'section.main'];
@@ -87,20 +87,32 @@ def main():
                 page = browser.new_page(viewport={"width": w, "height": h})
                 page.goto(URL)
                 settle(page)
-                tabs = page.get_by_role("tab")
-                count = max(tabs.count(), 1)
-                for i in range(count):
-                    if tabs.count():
-                        tabs.nth(i).click()
-                        settle(page)
-                    path = OUT / f"tab{i + 1}-{label}-fold.png"
+                # Pages are picked with the sidebar radio; its labels are the page names.
+                pages = ["Where should I build?", "How is my city doing?"]
+                for i, name in enumerate(pages):
+                    option = page.get_by_text(name, exact=True).first
+                    box = page.locator('[data-testid="stSidebar"]').bounding_box()
+                    if not box or box["width"] == 0 or box["x"] < 0:
+                        # Phone width: the sidebar starts collapsed. Open it to pick a page.
+                        page.locator('[data-testid="stSidebarCollapsedControl"] button, '
+                                     '[data-testid="collapsedControl"] button').first.click()
+                        page.wait_for_timeout(700)
+                    option.click()
+                    settle(page)
+                    if w < 700:
+                        # Close the sidebar again so the screenshot shows the result.
+                        page.locator('[data-testid="stSidebarCollapseButton"] button, '
+                                     '[data-testid="stSidebar"] button[kind="headerNoPadding"]'
+                                     ).first.click()
+                        page.wait_for_timeout(700)
+                    path = OUT / f"page{i + 1}-{label}-fold.png"
                     page.screenshot(path=str(path))
                     saved.append(path)
                     # Streamlit scrolls inside its own container, so full_page=True stops at
                     # the viewport. Grow the viewport to the content height instead.
                     page.set_viewport_size({"width": w, "height": content_height(page, h)})
                     page.wait_for_timeout(1000)
-                    path = OUT / f"tab{i + 1}-{label}-full.png"
+                    path = OUT / f"page{i + 1}-{label}-full.png"
                     page.screenshot(path=str(path))
                     saved.append(path)
                     page.set_viewport_size({"width": w, "height": h})

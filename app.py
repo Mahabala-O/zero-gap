@@ -597,21 +597,21 @@ else:
                    + ". Pick a promise below to read the city's own words.")
         DOT = {"Overdue": "#d62728", "Due later": "#e8a33b", "Done": "#2ca02c"}
         RANK = {"Overdue": 0, "Due later": 1, "No single target date": 2, "Done": 3}
-        st.markdown("<style>.pc-g{margin:0 0 18px}.pc-h{font-weight:600;font-size:1.05em;"
-                    "margin-bottom:3px}.pc-r{padding:2px 0 2px 14px;line-height:1.45}"
-                    ".pc-done{color:#6b7280}.pc-m{color:#6b7280;font-size:0.85em}</style>",
+        st.markdown("<style>.pc-h{font-weight:600;font-size:1.05em;margin-bottom:4px}"
+                    ".pc-r{padding:2px 0 2px 14px;line-height:1.45}.pc-done{color:#6b7280}"
+                    ".pc-m{color:#6b7280;font-size:0.85em;font-weight:400}</style>",
                     unsafe_allow_html=True)
 
         def tgt(i) -> str:
             t = prog.at[i, "target_date"]
             return date(t) if isinstance(t, str) else "no single date"
 
-        def row_html(i, lead: str = "") -> str:
+        def row_html(i) -> str:
             word = status_word[i]
             cls = "pc-r pc-done" if word == "Done" else "pc-r"
             item = A._clip(groups.at[i, "item"], 130)
             return (f"<div class='{cls}'><span style='color:{DOT.get(word, '#9ca3af')}'>●</span> "
-                    f"{lead}{item} <span class='pc-m'>· {word.lower()} · target {tgt(i)} · "
+                    f"{item} <span class='pc-m'>· {word.lower()} · target {tgt(i)} · "
                     f"city reports “{prog.at[i, 'status_bucket']}”</span></div>")
 
         if show.empty:
@@ -624,21 +624,15 @@ else:
                               key=lambda g: (g_rank[g], -g_over[g],
                                              g_first[g] if pd.notna(g_first[g])
                                              else pd.Timestamp.max))
-        blocks = []
         for g in shown_groups:
             idx = sorted([i for i in show.index if g_all[i] == g],
                          key=lambda i: (RANK[status_word[i]], str(prog.at[i, "target_date"])))
             n_g = int((g_all == g).sum())
-            if n_g == 1:
-                blocks.append("<div class='pc-g'>" + row_html(idx[0], f"<b>{g}</b> — ")
-                              + "</div>")
-                continue
-            head = (f"<div class='pc-h'>{g} <span class='pc-m'>· {n_g} promises"
-                    + (f", {int(g_over[g])} overdue" if g_over[g] else "") + "</span></div>")
-            blocks.append("<div class='pc-g'>" + head + "".join(row_html(i) for i in idx)
-                          + "</div>")
-        if blocks:
-            st.markdown("".join(blocks), unsafe_allow_html=True)
+            with st.container(border=True):
+                head = (f"<div class='pc-h'>{g} <span class='pc-m'>· "
+                        + (f"{n_g} promises" if n_g > 1 else "1 promise")
+                        + (f", {int(g_over[g])} overdue" if g_over[g] else "") + "</span></div>")
+                st.markdown(head + "".join(row_html(i) for i in idx), unsafe_allow_html=True)
 
         # 4. Look closer at one promise, then draft a request about it (never sent).
         st.subheader("Look closer at one")

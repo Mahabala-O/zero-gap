@@ -572,7 +572,7 @@ else:
         st.caption(f"{title(city)} is not on the chart: {NOT_ENOUGH.lower()} on this path "
                    f"({row['n']}).")
 
-    # 3. Promises.
+    # 3. Promises: a skimmable list grouped by program, overdue first.
     st.subheader("Its permitting promises")
     if n_prog:
         status_word = pd.Series("Due later", index=prog.index)
@@ -584,40 +584,77 @@ else:
         order = [s for s in ["Overdue", "Due later", "No single target date", "Done"]
                  if s in counts.index]
         choice = st.radio("Show", ["All"] + [f"{s} ({counts[s]})" for s in order],
-                          horizontal=True, label_visibility="collapsed", key="prog_filter",
-                          index=1 if "Overdue" in order else 0)
-        cats = sorted(prog["category"].unique())
-        cat_pick = st.selectbox("Type of promise", [None] + cats,
-                                format_func=lambda c: "All types" if c is None
-                                else c[:1].upper() + c[1:])
-        keep = prog["category"].notna() if cat_pick is None else prog["category"] == cat_pick
-        if choice != "All":
-            keep &= status_word == choice.rsplit(" (", 1)[0]
-        show = prog[keep].sort_values(["overdue", "target_date"], ascending=[False, True])
-        labels = A.program_labels(prog, name_len=90, obj_len=70)
+                          horizontal=True, label_visibility="collapsed", key="prog_filter")
+        keep = pd.Series(True, index=prog.index) if choice == "All" else \
+            status_word == choice.rsplit(" (", 1)[0]
+        show = prog[keep]
+        groups = A.program_groups(prog)
         method = prog["method"].iloc[0]
-        st.caption("Labels and status were read from the city's own text by "
-                   + ("Claude Haiku (claude-haiku-5-5) and are not yet hand-checked"
+        st.caption("Grouped by program, most overdue first. Status and type were read from the "
+                   "city's own text by "
+                   + ("Claude Haiku (claude-haiku-5-5), not yet hand-checked"
                       if method.startswith("claude") else "a keyword match, not reviewed")
-                   + ". Every card shows the city's own words: trust those first.")
+                   + ". Pick a promise below to read the city's own words.")
+        DOT = {"Overdue": "#d62728", "Due later": "#e8a33b", "Done": "#2ca02c"}
+        RANK = {"Overdue": 0, "Due later": 1, "No single target date": 2, "Done": 3}
+        st.markdown("<style>.pc-g{margin:0 0 18px}.pc-h{font-weight:600;font-size:1.05em;"
+                    "margin-bottom:3px}.pc-r{padding:2px 0 2px 14px;line-height:1.45}"
+                    ".pc-done{color:#6b7280}.pc-m{color:#6b7280;font-size:0.85em}</style>",
+                    unsafe_allow_html=True)
+
+        def tgt(i) -> str:
+            t = prog.at[i, "target_date"]
+            return date(t) if isinstance(t, str) else "no single date"
+
+        def row_html(i, lead: str = "") -> str:
+            word = status_word[i]
+            cls = "pc-r pc-done" if word == "Done" else "pc-r"
+            item = A._clip(groups.at[i, "item"], 130)
+            return (f"<div class='{cls}'><span style='color:{DOT.get(word, '#9ca3af')}'>●</span> "
+                    f"{lead}{item} <span class='pc-m'>· {word.lower()} · target {tgt(i)} · "
+                    f"city reports “{prog.at[i, 'status_bucket']}”</span></div>")
+
         if show.empty:
             st.info("No promises match this filter.")
-        card_cols = st.columns(2)
-        for k, (i, p) in enumerate(show.iterrows()):
-            with card_cols[k % 2], st.container(border=True):
-                word = status_word[i]
-                dot = {"Overdue": "#d62728", "Due later": "#e8a33b", "Done": "#2ca02c"}.get(
-                    word, "#9ca3af")
-                st.markdown(f"<span style='color:{dot}'>●</span> **{labels[i]}**",
-                            unsafe_allow_html=True)
-                tgt = p["target_date"] if isinstance(p["target_date"], str) else "no single date"
-                st.caption(f"{word} · target {tgt} · "
-                           f"{p['category'][:1].upper() + p['category'][1:]} · city reports "
-                           f"\"{p['status_bucket']}\"")
-                with st.expander("The city's own words"):
-                    st.markdown(f"**Program:** {p['PROGRAM_NAME']}")
-                    st.markdown(f"**Objective:** {p['PROGRAM_OBJECTIVE']}")
-                    st.markdown(f"**Status reported:** {p['PROGRAM_STATUS']}")
+        g_all = groups["group"]
+        g_over = status_word.eq("Overdue").groupby(g_all).sum()
+        g_first = pd.to_datetime(prog["target_date"], errors="coerce").groupby(g_all).min()
+        g_rank = status_word.map(RANK).groupby(g_all).min()
+        shown_groups = sorted(set(g_all[show.index]),
+                              key=lambda g: (g_rank[g], -g_over[g],
+                                             g_first[g] if pd.notna(g_first[g])
+                                             else pd.Timestamp.max))
+        blocks = []
+        for g in shown_groups:
+            idx = sorted([i for i in show.index if g_all[i] == g],
+                         key=lambda i: (RANK[status_word[i]], str(prog.at[i, "target_date"])))
+            n_g = int((g_all == g).sum())
+            if n_g == 1:
+                blocks.append("<div class='pc-g'>" + row_html(idx[0], f"<b>{g}</b> — ")
+                              + "</div>")
+                continue
+            head = (f"<div class='pc-h'>{g} <span class='pc-m'>· {n_g} promises"
+                    + (f", {int(g_over[g])} overdue" if g_over[g] else "") + "</span></div>")
+            blocks.append("<div class='pc-g'>" + head + "".join(row_html(i) for i in idx)
+                          + "</div>")
+        if blocks:
+            st.markdown("".join(blocks), unsafe_allow_html=True)
+
+        # 4. Look closer at one promise, then draft a request about it (never sent).
+        st.subheader("Look closer at one")
+        opts = list(show.index) if not show.empty else list(prog.index)
+        pick = st.selectbox("Promise", opts, key="draft_prog", label_visibility="collapsed",
+                            format_func=lambda i: f"{status_word[i]} · "
+                            f"{A._clip(groups.at[i, 'item'], 80)} ({A._clip(g_all[i], 50)})")
+        p = prog.loc[pick]
+        with st.container(border=True):
+            st.markdown(f"**{g_all[pick]}**")
+            st.markdown(f"**The city's objective:** {p['PROGRAM_OBJECTIVE']}")
+            st.markdown(f"**Status reported by the city:** {p['PROGRAM_STATUS']}")
+            st.caption(f"{status_word[pick]} · target {tgt(pick)} · type "
+                       f"{p['category'][:1].upper() + p['category'][1:]} · status label "
+                       f"\"{p['status_bucket']}\" · full program name: "
+                       f"{' '.join(str(p['PROGRAM_NAME']).split())}")
 
         open_cats = sorted(set(prog.loc[prog["status_bucket"] != "completed", "category"])
                            - {"other"})
@@ -633,13 +670,9 @@ else:
                 st.caption("Self-reported by each city. Finishing a program does not show it "
                            "made that city faster.")
 
-        # 4. Draft a request (never sent).
-        st.subheader("Ask the city about one")
+        st.markdown("**Ask the city about it**")
         st.caption("A polite note quoting the city's own promise. Nothing is sent: copy, review "
                    "and edit it yourself.")
-        opts = list(show.index) if not show.empty else list(prog.index)
-        pick = st.selectbox("Promise to ask about", opts, key="draft_prog",
-                            format_func=lambda i: f"[{status_word[i]}] {labels[i]}")
         row = prog.loc[pick].to_dict()
         key = api_key()
         if key and st.button("Draft with Claude", key="draft_btn"):

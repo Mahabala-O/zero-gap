@@ -203,17 +203,29 @@ def test_overdue_uses_todays_date_not_first_load(monkeypatch):
     assert early != overdue_tile()
 
 
-def test_filter_defaults_to_overdue_and_cards_show_the_citys_words():
+def test_promise_list_marks_every_overdue_item_and_groups_repeat_programs():
     at = run(PAGE_2)
     status = [r for r in at.main.radio if r.options and r.options[0] == "All"][0]
-    assert status.value.startswith("Overdue (")
-    n_over = int(re.search(r"\((\d+)\)", status.value).group(1))
-    cards = [m for m in at.main.markdown if m.value.startswith("<span style='color:#d62728'>")]
-    assert len(cards) == n_over
-    words = [e for e in at.main.expander if e.label == "The city's own words"]
-    assert len(words) == n_over
-    first = " ".join(m.value for m in words[0].markdown)
-    assert "**Status reported:**" in first and "**Objective:**" in first
+    assert status.value == "All"
+    n_over = int(re.search(r"Overdue \((\d+)\)", " ".join(status.options)).group(1))
+    text = " ".join(m.value for m in at.main.markdown)
+    assert text.count("color:#d62728") == n_over
+    # Tustin's "1.7 … Accessory Dwelling Units Program" has several lettered sub-items: one
+    # header, not one card per item, and the header counts them.
+    assert re.search(r"Accessory Dwelling Units Program <span class='pc-m'>· \d+ promises", text)
+    assert "6th HE Cycle" not in text  # shared lead dropped from every group title
+    # Filtering to overdue shows only red dots.
+    status.set_value(f"Overdue ({n_over})").run()
+    text = " ".join(m.value for m in at.main.markdown)
+    assert text.count("color:#d62728") == n_over and "color:#2ca02c" not in text
+
+
+def test_look_closer_shows_the_citys_own_words_and_the_draft_follows_it():
+    at = run(PAGE_2)
+    text = " ".join(m.value for m in at.main.markdown)
+    assert "**The city's objective:**" in text and "**Status reported by the city:**" in text
+    pick = [s for s in at.main.selectbox if s.key == "draft_prog"][0]
+    assert f"_{pick.value}_" in at.text_area[0].key  # the draft is about the picked promise
 
 
 def test_city_with_no_programs_gets_an_info_box_not_zero_counts():

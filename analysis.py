@@ -9,6 +9,7 @@ Only same-row date pairs are used here. Cross-year linking is reported by link_c
 """
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import numpy as np
@@ -247,6 +248,49 @@ def _drop_shared_lead(names: pd.Series, min_rows: int = 3) -> pd.Series:
         i = rest.rfind(lead)
         out.append(rest[i + len(lead):] if i >= 0 and rest[i + len(lead):].strip() else rest)
     return pd.Series(out, index=names.index)
+
+
+_SUB_ITEM = re.compile(r"^([a-z]\.|•|-)\s", re.I)
+
+
+def _title_line(name) -> str:
+    """The program's title from a possibly multi-line name.
+
+    Header lines are those before the first lettered or bulleted sub-item ("a. …", "• …").
+    A header line ending in ":" is joined with the next ("Program 8:\nAffordable Housing" →
+    "Program 8: Affordable Housing"). If any header line starts with a digit (a numbered
+    program such as "1.7 (Modified) …"), the last such line is the title, which skips a
+    leading goal heading; otherwise the header lines are joined with spaces.
+    """
+    lines = [" ".join(l.split()) for l in str(name).split("\n")]
+    lines = [l for l in lines if l]
+    if not lines:
+        return ""
+    header = []
+    for l in lines:
+        if _SUB_ITEM.match(l):
+            break
+        if header and header[-1].endswith(":"):
+            header[-1] = header[-1] + " " + l
+        else:
+            header.append(l)
+    if not header:
+        return lines[0]
+    numbered = [l for l in header if l[:1].isdigit()]
+    return numbered[-1] if numbered else " ".join(header)
+
+
+def program_groups(prog: pd.DataFrame) -> pd.DataFrame:
+    """Two-level view of a city's programs: group = the program title (shared leading words
+    such as "6th HE Cycle" removed first, as in program_labels), item = the promise itself,
+    taken from PROGRAM_OBJECTIVE with leading bullets stripped. Same index as prog."""
+    names = prog["PROGRAM_NAME"].map(lambda t: str(t) if isinstance(t, str) else "")
+    names = names.groupby(prog["JURIS_NAME"]).transform(_drop_shared_lead)
+    group = names.map(_title_line)
+    item = prog["PROGRAM_OBJECTIVE"].map(
+        lambda t: re.sub(r"^[•\-\s]+", "", " ".join(str(t).split())) if isinstance(t, str)
+        else "").replace("", "objective unknown")
+    return pd.DataFrame({"group": group, "item": item}, index=prog.index)
 
 
 def program_labels(prog: pd.DataFrame, name_len: int = 60, obj_len: int = 60) -> pd.Series:

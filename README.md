@@ -57,13 +57,14 @@ Annual Progress Report tables; the app makes no network calls on page load.
   reporting pattern; "Not enough reported data" below the minimum sample), and permitting
   promises overdue ("14 of 29" for Tustin as of 2026-11-08, checked against today's date).
 - The county ranking chart with the city highlighted.
-- Its permitting promises as cards, filtered by status (Overdue, Due later, No single target
-  date, Done) and type. Each card shows the shortened program name, the target date, the type
-  and the status label; "The city's own words" opens the full program name, objective and the
-  status text the city reported. Labels come from Claude Haiku and are not hand-checked, so the
-  city's own words are shown on every card.
+- Its permitting promises as a skimmable list grouped by program (Tustin's 29 rows become 11
+  programs), most overdue first: a header per program with its counts, then one line per
+  promise with a status dot, the promise in the city's own objective text, the target month
+  and the status the city reported. Done items are greyed. Filter by status. Labels come from
+  Claude Haiku and are not hand-checked, so "Look closer at one" opens the full objective, the
+  city's reported status and the full program name for any promise.
 - Other OC cities that report finishing the same kind of promise, and a drafted request about
-  one promise (template, or Claude with a key). Never sent.
+  the promise picked above (template, or Claude with a key). Never sent.
 
 **What a month of waiting costs** (sidebar calculator)
 

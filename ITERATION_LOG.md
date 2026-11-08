@@ -377,3 +377,9 @@
 - Changed: app.py rewritten. Two pages in the sidebar ("Where should I build?", "How is my city doing?"), wide layout. P50/P80 became "likely" and "plan for" with one tooltip. Every OC city ranked (solid = likely, faded = plan for), a calendar timeline for up to three cities, a plain verdict with the money on its own line, per-city "How we got this" expanders holding the ASSUMPTION/INFERRED notes, and a year trend. City page: three tiles, the ranking with the city highlighted, promises as filterable cards showing the city's own words, the draft. New costs.py: carrying-cost calculator with sourced rates (prime, Prop 13, Turner BCI) and example dollar amounts (ASSUMPTION). analysis.py: yearly_medians. tests/test_app_headline.py replaced by tests/test_app.py (20 tests). scripts/screenshot.py drives the sidebar pages. .streamlit/config.toml sets the accent color.
 - Result: check.sh pass; tests 49 -> 39 (30 headline-wording tests replaced by 20). "P50"/"P80" on screen: many -> 0 (tested).
 - Next: (1) hand-check data/tableD_handcheck.csv; (2) fix or remove .github/workflows/pylint.yml (fails: no requirements installed, Python 3.8–3.10); (3) merge to main and confirm the Streamlit Cloud deploy.
+
+## Promises list · 2026-11-08 (attended)
+
+- Found: the promise cards all looked alike and repeated the parent program name (Tustin lists sub-items a, b, c under one program), so the page could not be skimmed.
+- Changed: analysis.program_groups splits each name into a program title (shared lead dropped, multi-line titles joined, numbered line preferred over a goal heading) and the promise (the objective). app.py renders a grouped list, most overdue first, done rows greyed; one "Look closer" picker replaces 29 expanders and feeds the draft. Tests updated.
+- Result: check.sh pass; tests 39 -> 40.

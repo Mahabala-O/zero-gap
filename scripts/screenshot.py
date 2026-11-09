@@ -88,7 +88,7 @@ def main():
                 page.goto(URL)
                 settle(page)
                 # Pages are picked with the sidebar radio; its labels are the page names.
-                pages = ["Where should I build?", "How is my city doing?"]
+                pages = ["What did my city promise?", "After approval, how long to move-in?"]
                 for i, name in enumerate(pages):
                     option = page.get_by_text(name, exact=True).first
                     box = page.locator('[data-testid="stSidebar"]').bounding_box()

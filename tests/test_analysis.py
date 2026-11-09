@@ -98,16 +98,77 @@ def test_peer_medians_and_best_quartile_excludes_same_day():
     assert an.best_quartile(p[p["JURIS_NAME"].isin(["A", "B", "C"])]) == an.UNKNOWN
 
 
-def test_overdue_and_peers_completed():
-    prog = pd.DataFrame({
-        "JURIS_NAME": ["X", "X", "X", "Y", "Z", "Z"],
-        "category": ["fees", "fees", "fees", "fees", "fees", "other"],
-        "status_bucket": ["ongoing", "completed", "delayed", "completed", "completed", "completed"],
-        "target_date": ["2024-01-01", "2024-01-01", None, "2030-01-01", "2020-01-01", None],
-    })
+def _prog(rows):
+    return pd.DataFrame(rows, columns=["JURIS_NAME", "YEAR", "category", "status_bucket",
+                                       "PROGRAM_OBJECTIVE", "ACCOMPLISHED_DT"])
+
+
+def test_overdue_uses_the_citys_own_deadline_first():
+    prog = _prog([
+        # objective text wins over the report's date field; "by October 2024" -> 2024-10-31
+        ["X", "2025", "fees", "ongoing", "Adopt procedures no later than October 2024.", "2029-10-15"],
+        ["X", "2025", "fees", "ongoing", "Adopt ADU Design Guidelines by 2022.", None],
+        ["X", "2025", "fees", "completed", "Adopt by March 2024.", "2024-03-01"],
+        ["X", "2025", "fees", "ongoing", "Finish by the end of 2030.", None],
+    ])
     o = an.add_overdue(prog, "2026-11-07")
-    assert o["overdue"].tolist() == ["yes", "no", an.UNKNOWN, "no", "no", "no"]
+    assert o["target"].dt.date.astype(str).tolist() == ["2024-10-31", "2022-12-31", "2024-03-31",
+                                                         "2030-12-31"]
+    assert o["target_source"].tolist() == ["objective text"] * 4
+    assert o["overdue"].tolist() == ["yes", "yes", "no", "no"]
+
+
+def test_overdue_recurring_activities_are_never_flagged():
+    prog = _prog([
+        ["X", "2025", "fees", "ongoing", "Process approximately 5 ADU applications per year.", "2025-12-01"],
+        ["X", "2025", "fees", "ongoing", "Annual review and report", "2022-01-01"],
+        ["X", "2025", "fees", "ongoing", "Continue to maintain the ADU webpage.", None],
+        ["X", "2025", "fees", "ongoing", "Review processing times at least bi-annually.", "2023-06-01"],
+    ])
+    o = an.add_overdue(prog, "2026-11-07")
+    assert o["overdue"].tolist() == ["recurring"] * 4
+    assert o["target"].isna().all()
+
+
+def test_overdue_report_date_field_is_a_fallback_and_cycle_end_is_not_a_target():
+    prog = _prog([
+        ["X", "2025", "fees", "ongoing", "Update the ADU ordinance.", "2022-01-01"],  # specific
+        ["X", "2025", "fees", "ongoing", "Update the ADU ordinance.", "2029-10-15"],  # cycle end
+        ["X", "2025", "fees", "ongoing", "Update the ADU ordinance.", "2029-12-31"],  # cycle end
+        ["X", "2025", "fees", "ongoing", "Update the ADU ordinance.", "2025-12-31"],  # report yr
+        ["X", "2025", "fees", "ongoing", "Update the ADU ordinance.", None],
+        ["X", "2025", "fees", "completed", "Update the ADU ordinance.", "2022-01-01"],
+        ["X", "2025", "fees", "ongoing", "Update the ADU ordinance.", "2027-06-01"],
+    ])
+    o = an.add_overdue(prog, "2026-11-07")
+    assert o["overdue"].tolist() == ["yes", an.UNKNOWN, an.UNKNOWN, an.UNKNOWN, an.UNKNOWN,
+                                     "no", "no"]
+    assert o["target_source"].tolist() == ["report date field", "", "", "", "",
+                                           "report date field", "report date field"]
+
+
+def test_peers_completed():
+    prog = _prog([
+        ["X", "2025", "fees", "ongoing", "a", None],
+        ["Y", "2025", "fees", "completed", "a", None],
+        ["Z", "2025", "fees", "completed", "a", None],
+        ["Z", "2025", "other", "completed", "a", None],
+    ])
     assert an.peers_completed(prog, "x", "fees") == ["Y", "Z"]
+
+
+def test_handcheck_accuracy_reads_yes_no_and_blank(tmp_path):
+    f = tmp_path / "hc.csv"
+    f.write_text("row_id,correct?\n1,y\n2,Yes\n3,n\n4,\n5,maybe\n")
+    assert an.handcheck_accuracy(f) == {"n_rows": 5, "n_checked": 3, "n_correct": 2}
+
+
+def test_deed_restricted_flag_from_bp_dr_columns():
+    df = pd.DataFrame({"JURIS_NAME": ["A", "A", "A"], "ENT_APPROVE_DT1": [None] * 3,
+                       "BP_ISSUE_DT1": [None] * 3, "CO_ISSUE_DT1": [None] * 3,
+                       "BP_VLOW_INCOME_DR": ["2", "0", None], "BP_LOW_INCOME_NDR": ["0", "5", "0"]})
+    out = an.add_durations(df)
+    assert out["deed_restricted"].tolist() == [True, False, False]
 
 
 def test_program_labels_tell_same_named_rows_apart():

@@ -45,7 +45,26 @@ def add_durations(df: pd.DataFrame) -> pd.DataFrame:
         out[name + "_negative"] = days < 0
         out[name + "_same_day"] = days == 0
         out[name + "_days"] = days.where(days >= 0)
+    # Deed-restricted affordable units permitted (the BP_*_DR columns), any income band.
+    dr_cols = [c for c in out.columns if c.startswith("BP_") and c.endswith("_DR")]
+    units = sum((pd.to_numeric(out[c], errors="coerce").fillna(0) for c in dr_cols),
+                pd.Series(0.0, index=out.index))
+    out["deed_restricted"] = units > 0
     return out
+
+
+def handcheck_accuracy(path: Path | str = DATA_DIR / "tableD_handcheck.csv") -> dict:
+    """How many hand-check rows a person has filled in, and how many were marked correct.
+
+    The `correct?` column is read as yes for y/yes/true/1 and no for n/no/false/0 (case does
+    not matter); anything else counts as not checked. Returns {"n_rows", "n_checked",
+    "n_correct"}; accuracy is unknown until n_checked > 0.
+    """
+    hc = pd.read_csv(path, dtype=str)
+    col = hc.get("correct?", pd.Series(dtype=str)).fillna("").str.strip().str.lower()
+    yes = col.isin({"y", "yes", "true", "1"})
+    no = col.isin({"n", "no", "false", "0"})
+    return {"n_rows": len(hc), "n_checked": int((yes | no).sum()), "n_correct": int(yes.sum())}
 
 
 def count_negatives(df: pd.DataFrame) -> dict[str, int]:
@@ -205,15 +224,70 @@ def load_programs(path: Path | str = DATA_DIR / "tableD_classified.csv") -> pd.D
     return pd.read_csv(path, dtype=str)
 
 
+_MONTHS = ("january|february|march|april|may|june|july|august|september|october|november|"
+           "december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec")
+# "by October 2024", "no later than Oct. 2024", "by the end of 2023", "before 2025", "by 2022"
+_DEADLINE = re.compile(
+    r"\b(?:by|before|no later than|not later than|until|prior to)\s+(?:the end of\s+)?"
+    rf"(?:(?:{_MONTHS})\.?\s+(?:\d{{1,2}},?\s+)?)?(20[2-3]\d)\b", re.I)
+_DEADLINE_MONTH = re.compile(rf"\b({_MONTHS})\.?\s+(?:\d{{1,2}},?\s+)?(20[2-3]\d)\b", re.I)
+_RECURRING = re.compile(
+    r"\b(annual(?:ly)?|per year|each year|every year|every \w+ years|yearly|ongoing|on-going|"
+    r"on an ongoing basis|bi-?annual(?:ly)?|quarterly|monthly|as needed|as they arise|"
+    r"continue to|continue\b)", re.I)
+# ASSUMPTION: a target in 2029 or later is the end of the 6th housing-element cycle (October
+# 2029 for Orange County), not a promise date; the report year's December 31 is a report date.
+CYCLE_END_YEAR = 2029
+
+
+def _deadline_from_text(text) -> pd.Timestamp | None:
+    """A date the city itself wrote into the objective, or None. The last day of the month
+    named (or of the year when only a year is given), so "by October 2024" → 2024-10-31."""
+    if not isinstance(text, str):
+        return None
+    m = _DEADLINE.search(text)
+    if not m:
+        return None
+    year = int(m.group(1))
+    mm = _DEADLINE_MONTH.search(m.group(0))
+    month = pd.to_datetime(mm.group(1)[:3] + " 1 2000").month if mm else 12
+    return pd.Timestamp(year=year, month=month, day=1) + pd.offsets.MonthEnd(0)
+
+
 def add_overdue(prog: pd.DataFrame, today) -> pd.DataFrame:
-    """overdue = "yes" if target_date < today and status not completed; "no" if completed or
-    the target is today or later; "unknown" when there is no parsed target date."""
+    """Decide, for each program row, whether its promise is overdue.
+
+    Adds target (Timestamp or NaT), target_source and overdue:
+      - target from the city's own objective text ("by October 2024") when present
+        (target_source "objective text");
+      - else "recurring" when the objective describes a repeating activity ("annually",
+        "per year", "ongoing", "continue to"): overdue = "recurring", never flagged;
+      - else the report's ACCOMPLISHED_DT when it is a specific date (target_source
+        "report date field"); a date in CYCLE_END_YEAR or later, or the report year's
+        December 31, is treated as a cycle end or report date, not a promise (ASSUMPTION), and
+        overdue = "unknown";
+      - overdue = "yes" if the target is before today and status is not completed, "no" if
+        completed or the target is today or later.
+    """
     out = prog.copy()
-    t = pd.to_datetime(out["target_date"], errors="coerce")
+    text_target = out["PROGRAM_OBJECTIVE"].map(_deadline_from_text)
+    recurring = out["PROGRAM_OBJECTIVE"].map(
+        lambda t: bool(_RECURRING.search(t)) if isinstance(t, str) else False)
+    field = pd.to_datetime(out["ACCOMPLISHED_DT"], errors="coerce")
+    year_end = pd.to_datetime(out["YEAR"].astype(str) + "-12-31", errors="coerce")
+    field_ok = field.notna() & (field.dt.year < CYCLE_END_YEAR) & (field != year_end)
+    target = pd.to_datetime(text_target)
+    use_field = target.isna() & ~recurring & field_ok
+    target = target.where(~use_field, field)
+    out["target"] = target
+    out["target_source"] = np.where(text_target.notna(), "objective text",
+                                    np.where(use_field, "report date field", ""))
     done = out["status_bucket"] == "completed"
-    past = t < pd.Timestamp(today)
-    out["overdue"] = np.where(done, "no", np.where(t.isna(), UNKNOWN,
-                                                   np.where(past, "yes", "no")))
+    past = target < pd.Timestamp(today)
+    out["overdue"] = np.where(
+        done, "no",
+        np.where(target.notna(), np.where(past, "yes", "no"),
+                 np.where(recurring, "recurring", UNKNOWN)))
     return out
 
 

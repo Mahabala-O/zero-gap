@@ -383,3 +383,9 @@
 - Found: the promise cards all looked alike and repeated the parent program name (Tustin lists sub-items a, b, c under one program), so the page could not be skimmed.
 - Changed: analysis.program_groups splits each name into a program title (shared lead dropped, multi-line titles joined, numbered line preferred over a goal heading) and the promise (the objective). app.py renders a grouped list, most overdue first, done rows greyed; one "Look closer" picker replaces 29 expanders and feeds the draft. Tests updated.
 - Result: check.sh pass; tests 39 -> 40.
+
+## Repurpose · 2026-11-08 (attended)
+
+- Found: two evaluations (one independent) agreed the timing forecast answers a question nonprofits do not ask, on data about homes they do not build (517 of 53,578 OC rows deed-restricted), while the Table D promise tracker is unique and has real users (advocates, journalists, HCD, consultants). Overdue flags over-counted: the report's date field is a cycle-end date in 136 rows and 84 objectives describe recurring activities.
+- Changed: promise page is the landing page; duplicate ranking replaced by one sentence. Overdue logic: the city's own wording first, specific report dates as fallback, cycle-end and report-year dates excluded (ASSUMPTION), recurring activities never flagged (Tustin 14 -> 10 overdue, OC 93 -> 82). Labels marked unverified until data/tableD_handcheck.csv is filled; accuracy printed when it is. Timing page renamed to what it measures, lead says what it leaves out, unknown cities listed in the chart, deed-restricted filter, costs as differences plus a deadline-at-risk check, trend in an expander. docs/design-guidelines.md and ui.py (Stripe-like system: tokens, type, cards, stat tiles, chart style) applied to both pages. Tests rewritten (48).
+- Result: check.sh pass.
